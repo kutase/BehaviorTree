@@ -1,7 +1,6 @@
-using System.Linq;
 using UnityEngine;
 
-namespace Plugins.Behavior_Tree.Runtime.New.Configs
+namespace Plugins.BehaviorTree.Runtime.Configs
 {
     [CreateAssetMenu(fileName = "BehaviorTreePreferences", menuName = "Behavior Tree/Preferences")]
     public class BehaviorTreeConfig : ScriptableObject

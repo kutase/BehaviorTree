@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Plugins.Behavior_Tree.Runtime.New.Nodes.Composites
+namespace Plugins.BehaviorTree.Runtime.Nodes.Composites
 {
     // Composite nodes have multiple children
     public abstract class Composite : Node

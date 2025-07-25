@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Plugins.Behavior_Tree.Runtime.New.Nodes.Decorators
+namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
 {
     // Decorator wraps one child node
     public abstract class Decorator : Node

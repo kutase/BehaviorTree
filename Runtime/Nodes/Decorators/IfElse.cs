@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Plugins.Behavior_Tree.Runtime.New.Nodes.Decorators
+namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
 {
     // Example decorator: IfElse
     public class IfElse : Decorator

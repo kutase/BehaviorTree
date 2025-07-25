@@ -1,7 +1,7 @@
-using Plugins.Behavior_Tree.Runtime.New.Nodes;
+using Plugins.BehaviorTree.Runtime.Nodes;
 using UnityEngine;
 
-namespace Plugins.Behavior_Tree.Runtime.New
+namespace Plugins.BehaviorTree.Runtime
 {
     // Usage in a MonoBehaviour
     public class BehaviorTreeRunner : MonoBehaviour

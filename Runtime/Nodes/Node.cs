@@ -1,10 +1,7 @@
 using System.Collections.Generic;
-
-#if UNITY_EDITOR
 using UnityEngine;
-#endif
 
-namespace Plugins.Behavior_Tree.Runtime.New.Nodes
+namespace Plugins.BehaviorTree.Runtime.Nodes
 {
     // Base class for all nodes, with OnEnter/OnExit hooks
     public abstract class Node

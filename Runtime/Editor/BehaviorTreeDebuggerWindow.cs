@@ -1,16 +1,15 @@
 using System;
-using Plugins.Behavior_Tree.Runtime.New.Configs;
-using Plugins.Behavior_Tree.Runtime.New.Nodes;
-using Plugins.Behavior_Tree.Runtime.New.Nodes.Composites;
-using Plugins.Behavior_Tree.Runtime.New.Nodes.Decorators;
+using System.Collections.Generic;
+using System.Linq;
+using Plugins.BehaviorTree.Runtime.Configs;
+using Plugins.BehaviorTree.Runtime.Nodes;
+using Plugins.BehaviorTree.Runtime.Nodes.Composites;
+using Plugins.BehaviorTree.Runtime.Nodes.Decorators;
+using UnityEditor;
+using UnityEngine;
 
-namespace Plugins.Behavior_Tree.Runtime.New.Editor
+namespace Plugins.BehaviorTree.Runtime.Editor
 {
-    using UnityEditor;
-    using UnityEngine;
-    using System.Collections.Generic;
-    using System.Linq;
-
     public class BehaviorTreeEditorWindow : EditorWindow
     {
         private Vector2 panOffset = Vector2.zero;

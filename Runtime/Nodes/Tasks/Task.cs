@@ -1,4 +1,4 @@
-namespace Plugins.Behavior_Tree.Runtime.New.Nodes.Tasks
+namespace Plugins.BehaviorTree.Runtime.Nodes.Tasks
 {
     // Leaf nodes: actual actions or conditions
     public abstract class Task : Node

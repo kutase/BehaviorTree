@@ -1,4 +1,4 @@
-namespace Plugins.Behavior_Tree.Runtime.New.Nodes.Composites
+namespace Plugins.BehaviorTree.Runtime.Nodes.Composites
 {
     // Sequence: AND behavior
     public class Sequence : Composite

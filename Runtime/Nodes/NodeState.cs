@@ -1,4 +1,4 @@
-namespace Plugins.Behavior_Tree.Runtime.New.Nodes
+namespace Plugins.BehaviorTree.Runtime.Nodes
 {
     // Possible return states for all nodes
     public enum NodeState

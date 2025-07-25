@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using Plugins.Behavior_Tree.Runtime.New.Nodes;
+using Plugins.BehaviorTree.Runtime.Nodes;
 
-namespace Plugins.Behavior_Tree.Runtime.New
+namespace Plugins.BehaviorTree.Runtime
 {
     // Main BehaviorTree class to manage ticking and reset
     public class BehaviorTree

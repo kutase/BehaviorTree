@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Plugins.Behavior_Tree.Runtime.New.Nodes.Tasks
+namespace Plugins.BehaviorTree.Runtime.Nodes.Tasks
 {
     public class MoveToTarget : Task
     {

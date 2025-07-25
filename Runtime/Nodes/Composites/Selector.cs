@@ -1,4 +1,4 @@
-namespace Plugins.Behavior_Tree.Runtime.New.Nodes.Composites
+namespace Plugins.BehaviorTree.Runtime.Nodes.Composites
 {
     // Selector: OR behavior
     public class Selector : Composite
