@@ -33,21 +33,6 @@ namespace Plugins.BehaviorTree.Runtime
             LastState = NodeState.NotActive;
         }
 
-        // For editor: get all nodes and edges
-        public List<Node> GetAllNodes()
-        {
-            var nodes = new List<Node>();
-            root.CollectNodes(nodes);
-            return nodes;
-        }
-
-        public List<(Node parent, Node child)> GetAllEdges()
-        {
-            var edges = new List<(Node, Node)>();
-            root.CollectEdges(edges);
-            return edges;
-        }
-
         public void Start()
         {
             LastState = NodeState.Running;

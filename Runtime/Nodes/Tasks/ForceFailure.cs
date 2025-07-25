@@ -1,6 +1,6 @@
 namespace Plugins.BehaviorTree.Runtime.Nodes.Tasks
 {
-    public class ForceFailure : Task
+    public class ForceFailure : Node
     {
         protected override NodeState Run()
         {

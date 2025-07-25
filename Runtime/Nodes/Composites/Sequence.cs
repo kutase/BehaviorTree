@@ -14,7 +14,7 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Composites
             currentIndex = 0;
         }
 
-        protected override NodeState ExecuteNode()
+        protected override NodeState Run()
         {
             while (currentIndex < children.Count)
             {

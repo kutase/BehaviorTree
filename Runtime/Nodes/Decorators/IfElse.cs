@@ -18,26 +18,11 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
             this.elseNode = elseNode;
         }
 
-        protected override NodeState ExecuteNode()
+        protected override NodeState Run()
         {
             // Switch child based on condition
             child = condition() ? ifNode : elseNode;
-            return base.ExecuteNode();
-        }
-
-        public override void CollectNodes(List<Node> nodes)
-        {
-            base.CollectNodes(nodes);
-            ifNode.CollectNodes(nodes);
-            elseNode.CollectNodes(nodes);
-        }
-
-        public override void CollectEdges(List<(Node parent, Node child)> edges)
-        {
-            edges.Add((this, ifNode));
-            edges.Add((this, elseNode));
-            ifNode.CollectEdges(edges);
-            elseNode.CollectEdges(edges);
+            return base.Run();
         }
     }
 }

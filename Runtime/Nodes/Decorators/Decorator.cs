@@ -14,21 +14,9 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
             this.child = child;
         }
 
-        protected override NodeState ExecuteNode()
+        protected override NodeState Run()
         {
             return child.Tick();
-        }
-
-        public override void CollectNodes(List<Node> nodes)
-        {
-            base.CollectNodes(nodes);
-            child.CollectNodes(nodes);
-        }
-
-        public override void CollectEdges(List<(Node parent, Node child)> edges)
-        {
-            edges.Add((this, child));
-            child.CollectEdges(edges);
         }
     }
 }

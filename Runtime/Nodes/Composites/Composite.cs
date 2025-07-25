@@ -13,20 +13,5 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Composites
         {
             children.AddRange(nodes);
         }
-
-        public override void CollectNodes(List<Node> nodes)
-        {
-            base.CollectNodes(nodes);
-            foreach (var c in children) c.CollectNodes(nodes);
-        }
-
-        public override void CollectEdges(List<(Node parent, Node child)> edges)
-        {
-            foreach (var c in children)
-            {
-                edges.Add((this, c));
-                c.CollectEdges(edges);
-            }
-        }
     }
 }

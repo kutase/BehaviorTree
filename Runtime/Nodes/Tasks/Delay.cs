@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Plugins.BehaviorTree.Runtime.Nodes.Tasks
 {
     // Example Tasks with OnEnter/OnExit
-    public class Delay : Task
+    public class Delay : Node
     {
         private readonly float duration;
         private float elapsed;

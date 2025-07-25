@@ -48,7 +48,7 @@ namespace Plugins.BehaviorTree.Runtime.Nodes
         }
 
         // Core execution logic for this node
-        protected abstract NodeState ExecuteNode();
+        protected abstract NodeState Run();
 
         // Public tick: handles enter/exit and execution
         public NodeState Tick()
@@ -60,7 +60,7 @@ namespace Plugins.BehaviorTree.Runtime.Nodes
                 state = NodeState.Running;
             }
 
-            state = ExecuteNode();
+            state = Run();
 
             if (state != NodeState.Running)
             {
@@ -69,17 +69,6 @@ namespace Plugins.BehaviorTree.Runtime.Nodes
             }
 
             return state;
-        }
-
-        // Collect all nodes in subtree
-        public virtual void CollectNodes(List<Node> nodes)
-        {
-            nodes.Add(this);
-        }
-
-        // Collect edges parent->child for visualization
-        public virtual void CollectEdges(List<(Node parent, Node child)> edges)
-        {
         }
     }
 }
