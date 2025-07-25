@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29b680a1edf24d13ae2bd32ff0101d45, type: 3}
+  m_Name: DefaultBehaviorTreeConfig
+  m_EditorClassIdentifier: 
+  snapStep: 12
+  zoomDelta: 0.2
+  minZoom: 1
+  maxZoom: 5
+  panSpeed: 1.2
+  gridTexture: {fileID: 2800000, guid: dd96d55fe839c964bb7e4069064d455a, type: 3}
+  failureSymbol: {fileID: 2800000, guid: 01a55655d992ef24bb30b4d42549a60b, type: 3}
+  successSymbol: {fileID: 2800000, guid: 6547b07bfa6427d4a9dd0be90de5e67e, type: 3}
+  nodeBackgroundTexture: {fileID: 2800000, guid: 4d7da9a231c44784cbfbc05527ef8ab3, type: 3}
+  nodeGradient: {fileID: 2800000, guid: e7082292cf80bea4fb0ef261d46ad239, type: 3}
+  portTexture: {fileID: 2800000, guid: 917c5f22245687943952f0126f69e9df, type: 3}
+  compositeColor: {r: 0.6603774, g: 0.6603774, b: 0.6603774, a: 1}
+  decoratorColor: {r: 0.4553469, g: 0.38719293, b: 0.7264151, a: 1}
+  conditionalColor: {r: 0.36663404, g: 0.7264151, b: 0.72088, a: 1}
+  serviceColor: {r: 0.990566, g: 0.6200383, b: 0.13550198, a: 1}
+  taskColor: {r: 0.59607846, g: 0.6431373, b: 0.5372549, a: 1}
+  defaultNodeBackgroundColor: {r: 0.2924528, g: 0.2924528, b: 0.2924528, a: 1}
+  selectedColor: {r: 0.3443396, g: 0.62303853, b: 1, a: 1}
+  runningColor: {r: 0.2971698, g: 1, b: 0.61701846, a: 1}
+  abortColor: {r: 0.3722855, g: 0.8867924, b: 0.8457736, a: 1}
+  referenceColor: {r: 1, g: 0.77234, b: 0.031372547, a: 1}
+  evaluateColor: {r: 0, g: 0.42990875, b: 1, a: 1}
+  rootSymbolColor: {r: 0.90977204, g: 1, b: 0, a: 1}
+  headerColor: {r: 0.16981119, g: 0.16981119, b: 0.16981119, a: 1}
+  descriptionColor: {r: 0.32614553, g: 0.32614553, b: 0.32614553, a: 1}
+  runningStatusColor: {r: 0.1, g: 1, b: 0.54, a: 1}
+  successColor: {r: 0.3066038, g: 1, b: 0.6434876, a: 1}
+  failureColor: {r: 1, g: 0.4301899, b: 0.36320752, a: 1}
+  abortedColor: {r: 0.17030083, g: 0.48223865, b: 0.8396226, a: 1}
+  interruptedColor: {r: 1, g: 0.7523259, b: 0.042452812, a: 1}
+  defaultConnectionColor: {r: 0.7607844, g: 0.7607844, b: 0.7607844, a: 1}
+  defaultConnectionWidth: 4
+  runningConnectionWidth: 4
+  nodeSizePadding: {x: 12, y: 6}
+  nodeWidthPadding: 12
+  portHeight: 20
+  portWidthTrim: 50
+  iconSize: 32
+  statusIconSize: 16

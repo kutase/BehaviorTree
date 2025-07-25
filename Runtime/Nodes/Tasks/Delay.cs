@@ -1,0 +1,38 @@
+using UnityEngine;
+
+namespace Plugins.Behavior_Tree.Runtime.New.Nodes.Tasks
+{
+    // Example Tasks with OnEnter/OnExit
+    public class Delay : Task
+    {
+        private readonly float duration;
+        private float elapsed;
+
+        public override string Description => $"Wait: {Mathf.Max(duration - elapsed, 0f):0}s";
+
+        public Delay(float seconds)
+        {
+            duration = seconds;
+        }
+
+        protected override void OnEnter()
+        {
+            elapsed = 0f;
+        }
+
+        protected override NodeState Run()
+        {
+            elapsed += Time.deltaTime;
+
+            #if UNITY_EDITOR
+            UpdateEditorGui();
+            #endif
+            return elapsed >= duration ? NodeState.Success : NodeState.Running;
+        }
+
+        protected override void OnExit()
+        {
+            // Cleanup if needed
+        }
+    }
+}
