@@ -30,7 +30,7 @@ MonoBehaviour:
   taskColor: {r: 0.59607846, g: 0.6431373, b: 0.5372549, a: 1}
   defaultNodeBackgroundColor: {r: 0.2924528, g: 0.2924528, b: 0.2924528, a: 1}
   selectedColor: {r: 0.3443396, g: 0.62303853, b: 1, a: 1}
-  runningColor: {r: 0.2971698, g: 1, b: 0.61701846, a: 1}
+  runningColor: {r: 0.10196078, g: 0.9836048, b: 1, a: 1}
   abortColor: {r: 0.3722855, g: 0.8867924, b: 0.8457736, a: 1}
   referenceColor: {r: 1, g: 0.77234, b: 0.031372547, a: 1}
   evaluateColor: {r: 0, g: 0.42990875, b: 1, a: 1}
