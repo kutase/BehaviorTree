@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Bonsai.Designer;
 
 #if UNITY_EDITOR
 using UnityEngine;

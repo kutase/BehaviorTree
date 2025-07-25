@@ -1,5 +1,4 @@
 using System.Linq;
-using Bonsai.Designer;
 using UnityEngine;
 
 namespace Plugins.Behavior_Tree.Runtime.New.Configs

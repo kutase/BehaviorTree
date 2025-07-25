@@ -1,5 +1,4 @@
 using System;
-using Bonsai.Designer;
 using Plugins.Behavior_Tree.Runtime.New.Configs;
 using Plugins.Behavior_Tree.Runtime.New.Nodes;
 using Plugins.Behavior_Tree.Runtime.New.Nodes.Composites;
