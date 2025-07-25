@@ -1,17 +1,16 @@
 {
-  "name": "BehaviorTree",
-  "rootNamespace": "",
-  "references": [
-    "GUID:c58ac767d26e4409b4092bc0ad1637b9",
-    "GUID:26b9a90400f071b48b1eeb2bce59af07"
-  ],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false
+    "name": "BehaviorTree",
+    "rootNamespace": "",
+    "references": [
+        "GUID:c58ac767d26e4409b4092bc0ad1637b9"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
