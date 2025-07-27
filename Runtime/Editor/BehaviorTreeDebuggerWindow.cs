@@ -12,95 +12,36 @@ namespace Plugins.BehaviorTree.Runtime.Editor
 {
     public class BehaviorTreeEditorWindow : EditorWindow
     {
+        #region Fields
+        // Panning and dragging
         private Vector2 panOffset = Vector2.zero;
         private Vector2 dragStartPos;
         private bool dragging = false;
 
+        // Node positions and sizes
         private Dictionary<Node, Vector2> positions = new();
         private Dictionary<Node, Vector2> nodeSizes = new();
 
+        // Current tree and runner
         private BehaviorTree currentTree;
-
+        private BehaviorTreeRunner currentTreeRunner;
         private bool firstCenter = true;
 
+        // Spacing between nodes
         private readonly float verticalSpacing = 100;
         private readonly float horizontalSpacing = 30;
 
-        #region Styles
-        private GUIStyle CreateHeaderStyle()
-        {
-            var style = new GUIStyle();
-            style.normal.textColor = BehaviorTreeConfig.Instance.headerColor;
-            style.fontStyle = FontStyle.Bold;
-            style.alignment = TextAnchor.MiddleCenter;
-            style.wordWrap = true;
-            style.clipping = TextClipping.Clip;
-            style.stretchWidth = true;
-            style.stretchHeight = true;
-            return style;
-        }
-
-        private GUIStyle CreateBodyStyle()
-        {
-            var style = new GUIStyle();
-            style.normal.textColor = BehaviorTreeConfig.Instance.descriptionColor;
-            style.alignment = TextAnchor.UpperCenter;
-            style.wordWrap = true;
-            style.clipping = TextClipping.Clip;
-            style.stretchWidth = true;
-            style.stretchHeight = true;
-            return style;
-        }
-
+        // Styles
+        private GUIStyle treeNameStatusStyle;
+        private Rect treeNameStatusRect;
         private GUIStyle HeaderStyle;
         private GUIStyle BodyStyle;
-
-        private void InitStyles()
-        {
-            if (HeaderStyle == null)
-                HeaderStyle = CreateHeaderStyle();
-
-            if (BodyStyle == null)
-                BodyStyle = CreateBodyStyle();
-        }
-
-        private Color GetStateColor(NodeState state)
-        {
-            return state switch
-            {
-                NodeState.Running => BehaviorTreeConfig.Instance.runningColor,
-                NodeState.Success => BehaviorTreeConfig.Instance.successColor,
-                NodeState.Failure => BehaviorTreeConfig.Instance.failureColor,
-                NodeState.NotActive => BehaviorTreeConfig.Instance.defaultNodeBackgroundColor,
-                _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
-            };
-        }
-
-        Vector2 GetNodeSize(Node node)
-        {
-            if (nodeSizes.ContainsKey(node))
-                return nodeSizes[node];
-
-            node.UpdateEditorGui();
-
-            Vector2 headerSize = HeaderStyle.CalcSize(node.HeaderContent);
-            Vector2 bodySize = BodyStyle.CalcSize(node.BodyContent);
-
-            float padding = 10f;
-            float width = Mathf.Max(headerSize.x, bodySize.x) + padding * 2;
-            float height = headerSize.y + bodySize.y + padding * 3;
-
-            nodeSizes[node] = new Vector2(width, height);
-
-            return nodeSizes[node];
-        }
-
         #endregion
 
+        #region Unity Events
         private void OnEnable()
         {
             InitStyles();
-
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
             Selection.selectionChanged += OnSelectionChange;
         }
@@ -110,12 +51,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             EditorApplication.playModeStateChanged -= PlayModeStateChanged;
             Selection.selectionChanged -= OnSelectionChange;
         }
+        #endregion
 
-        private void PlayModeStateChanged(PlayModeStateChange obj)
-        {
-            OnSelectionChange();
-        }
-
+        #region Menu
         [MenuItem("Window/Behavior Tree Viewer")]
         public static void OpenWindow()
         {
@@ -123,32 +61,17 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             window.titleContent = new GUIContent("Behavior Tree");
             window.Show();
         }
+        #endregion
 
-        private void OnSelectionChange()
-        {
-            if (Selection.activeGameObject != null)
-            {
-                var runner = Selection.activeGameObject.GetComponent<BehaviorTreeRunner>();
-                if (runner != null)
-                {
-                    currentTree = runner.Tree;
-                }
-                else
-                {
-                    currentTree = null;
-                }
-            }
-
-            positions.Clear();
-            nodeSizes.Clear();
-            firstCenter = true;
-
-            Repaint();
-        }
-
+        #region Main GUI
         private void OnGUI()
         {
-            HandleInput();
+            if (currentTreeRunner != null && currentTree != currentTreeRunner.Tree)
+            {
+                OnSelectionChange();
+            }
+
+            HandlePanInput();
 
             if (currentTree != null && currentTree.Root != null)
             {
@@ -175,8 +98,88 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 Repaint();
             }
         }
+        #endregion
 
-        private void HandleInput()
+        #region Selection & Playmode
+        private void PlayModeStateChanged(PlayModeStateChange obj)
+        {
+            OnSelectionChange();
+        }
+
+        private void OnSelectionChange()
+        {
+            if (Selection.activeGameObject != null)
+            {
+                currentTreeRunner = Selection.activeGameObject.GetComponentInChildren<BehaviorTreeRunner>();
+                if (currentTreeRunner != null)
+                {
+                    currentTree = currentTreeRunner.Tree;
+                }
+                else
+                {
+                    currentTree = null;
+                }
+            }
+            else
+            {
+                currentTree = null;
+                currentTreeRunner = null;
+            }
+
+            positions.Clear();
+            nodeSizes.Clear();
+            firstCenter = true;
+
+            Repaint();
+        }
+        #endregion
+
+        #region Styles
+        private void InitStyles()
+        {
+            if (HeaderStyle == null)
+                HeaderStyle = CreateHeaderStyle();
+
+            if (BodyStyle == null)
+                BodyStyle = CreateBodyStyle();
+
+            treeNameStatusStyle = new GUIStyle { fontSize = 36, fontStyle = FontStyle.Bold };
+            treeNameStatusStyle.normal.textColor = BehaviorTreeConfig.Instance.treeNameColor;
+
+            treeNameStatusRect = new Rect(20f, 20f, 250f, 150f);
+        }
+
+        private GUIStyle CreateHeaderStyle()
+        {
+            var style = new GUIStyle();
+            style.normal.textColor = BehaviorTreeConfig.Instance.headerColor;
+            style.fontStyle = FontStyle.Bold;
+            style.alignment = TextAnchor.MiddleCenter;
+            style.wordWrap = true;
+            style.clipping = TextClipping.Clip;
+            style.stretchWidth = true;
+            style.stretchHeight = true;
+            return style;
+        }
+
+        private GUIStyle CreateBodyStyle()
+        {
+            var style = new GUIStyle();
+            style.normal.textColor = BehaviorTreeConfig.Instance.descriptionColor;
+            style.alignment = TextAnchor.UpperCenter;
+            style.wordWrap = true;
+            style.clipping = TextClipping.Clip;
+            style.stretchWidth = true;
+            style.stretchHeight = true;
+            return style;
+        }
+        #endregion
+
+        #region Input
+        /// <summary>
+        /// Handles mouse input for panning.
+        /// </summary>
+        private void HandlePanInput()
         {
             Event e = Event.current;
             if (e.type == EventType.MouseDown && e.button == 0)
@@ -199,12 +202,14 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 e.Use();
             }
         }
+        #endregion
 
+        #region Layout
+        /// <summary>
+        /// Recursively lays out the tree nodes.
+        /// </summary>
         private void Layout(Node node, Vector2 origin)
         {
-            float width = 0f;
-            float maxHeight = 0f;
-
             if (node is Composite composite && composite.Children.Count > 0)
             {
                 List<Vector2> childPositions = new();
@@ -213,7 +218,6 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 foreach (var child in composite.Children)
                 {
                     var childNodeSize = GetNodeSize(child);
-
                     Layout(child, origin + new Vector2(xOffset, verticalSpacing));
                     Vector2 childPos = positions[child];
                     childPositions.Add(childPos);
@@ -235,6 +239,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             }
         }
 
+        /// <summary>
+        /// Centers the tree on the screen.
+        /// </summary>
         private void CenterTree()
         {
             if (positions.Count == 0)
@@ -250,47 +257,27 @@ namespace Plugins.BehaviorTree.Runtime.Editor
 
             panOffset = canvasCenter - center;
         }
+        #endregion
 
+        #region Drawing
         /// <summary>
-        /// Draw a tiled grid that can be scaled and translated.
+        /// Main method for drawing the canvas.
         /// </summary>
-        /// <param name="canvas">The area to draw the grid</param>
-        /// <param name="texture">The grid tile texture</param>
-        /// <param name="zoom">Scales the grid by zoom amount</param>
-        /// <param name="pan">Translates the grid pan amount</param>
-        public static void DrawGrid(Rect canvas, Texture texture, float zoom, Vector2 pan)
-        {
-            var size = canvas.size;
-            var center = size / 2f;
-
-            // Offset from origin in tile units
-            float xOffset = -(center.x * zoom + pan.x) / texture.width;
-            float yOffset = ((center.y - size.y) * zoom + pan.y) / texture.height;
-
-            Vector2 tileOffset = new Vector2(xOffset, yOffset);
-
-            // Amount of tiles
-            float tileAmountX = Mathf.Round(size.x * zoom) / texture.width;
-            float tileAmountY = Mathf.Round(size.y * zoom) / texture.height;
-
-            Vector2 tileAmount = new Vector2(tileAmountX, tileAmountY);
-
-            // Draw tiled background
-            GUI.DrawTextureWithTexCoords(canvas, texture, new Rect(tileOffset, tileAmount));
-        }
-
-        private void DrawGrid(Vector2 size)
-        {
-            var canvasRect = new Rect(Vector2.zero, size);
-            DrawGrid(canvasRect, BehaviorTreeConfig.Instance.gridTexture, 1f, panOffset);
-        }
-
         private void DrawCanvas()
         {
             Handles.BeginGUI();
-
             DrawGrid(position.size);
+            DrawTreeName();
+            DrawConnections();
+            Handles.EndGUI();
+            DrawNodes();
+        }
 
+        /// <summary>
+        /// Draws all connections between nodes.
+        /// </summary>
+        private void DrawConnections()
+        {
             foreach (var pair in positions)
             {
                 var startNodeSize = GetNodeSize(pair.Key);
@@ -300,7 +287,6 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                     foreach (var child in comp.Children)
                     {
                         var childNodeSize = GetNodeSize(child);
-
                         if (positions.TryGetValue(child, out var childPos))
                             DrawConnection(startNodeSize, childNodeSize, pair.Value, childPos);
                     }
@@ -308,50 +294,84 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 else if (pair.Key is Decorator dec && dec.Child != null)
                 {
                     var childNodeSize = GetNodeSize(dec.Child);
-
                     if (positions.TryGetValue(dec.Child, out var childPos))
                         DrawConnection(startNodeSize, childNodeSize, pair.Value, childPos);
                 }
             }
+        }
 
-            Handles.EndGUI();
-
+        /// <summary>
+        /// Draws all nodes.
+        /// </summary>
+        private void DrawNodes()
+        {
             foreach (var pair in positions)
             {
                 DrawNode(pair.Key, pair.Value + panOffset);
             }
         }
-        
-        // Helper method to draw textures with color tint.
-        public static void DrawTexture(Rect r, Texture2D tex, Color c)
+
+        /// <summary>
+        /// Draws the tree name.
+        /// </summary>
+        public void DrawTreeName()
         {
-            GUI.DrawTexture(r, tex, ScaleMode.ScaleToFit, true, 0f, c, 0f, 0f);
+            GUI.Label(treeNameStatusRect, currentTree?.TreeName ?? "", treeNameStatusStyle);
         }
 
+        /// <summary>
+        /// Draws the grid.
+        /// </summary>
+        private void DrawGrid(Vector2 size)
+        {
+            var canvasRect = new Rect(Vector2.zero, size);
+            DrawGrid(canvasRect, BehaviorTreeConfig.Instance.gridTexture, 1f, panOffset);
+        }
+
+        /// <summary>
+        /// Draws a single node.
+        /// </summary>
         private void DrawNode(Node node, Vector2 pos)
         {
-            // Рассчитываем размер узла на основе содержимого
+            Rect rect = GetNodeRect(node, pos);
+            DrawNodeBackground(node, rect);
+            DrawNodeStatus(node, rect);
+            DrawNodeContent(node, rect, node);
+        }
+
+        /// <summary>
+        /// Gets the rectangle for a node.
+        /// </summary>
+        private Rect GetNodeRect(Node node, Vector2 pos)
+        {
+            Vector2 size = GetNodeSize(node);
+            return new Rect(pos.x, pos.y, size.x, size.y);
+        }
+
+        /// <summary>
+        /// Gets the node size (with caching).
+        /// </summary>
+        private Vector2 GetNodeSize(Node node)
+        {
+            if (nodeSizes.ContainsKey(node))
+                return nodeSizes[node];
+
+            node.UpdateEditorGui();
             Vector2 headerSize = HeaderStyle.CalcSize(node.HeaderContent);
             Vector2 bodySize = BodyStyle.CalcSize(node.BodyContent);
-    
-            // Добавляем отступы
             float padding = 10f;
             float width = Mathf.Max(headerSize.x, bodySize.x) + padding * 2;
             float height = headerSize.y + bodySize.y + padding * 3;
-    
-            Rect rect = new(pos.x, pos.y, width, height);
-    
-            DrawNodeBackground(node, rect);
-
-            DrawNodeStatus(node, rect);
-
-            DrawNodeContent(node, rect, headerSize, bodySize);
+            nodeSizes[node] = new Vector2(width, height);
+            return nodeSizes[node];
         }
 
+        /// <summary>
+        /// Draws the node background.
+        /// </summary>
         private void DrawNodeBackground(Node node, Rect rect)
         {
             Color bgColor = GetStateColor(node.State);
-
             GUI.DrawTexture(
                 rect,
                 BehaviorTreeConfig.Instance.nodeGradient,
@@ -363,21 +383,23 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 4f);
         }
 
-        private void DrawNodeContent(Node node, Rect rect, Vector2 headerSize, Vector2 bodySize)
+        /// <summary>
+        /// Draws the node content.
+        /// </summary>
+        private void DrawNodeContent(Node node, Rect rect, Node contentNode)
         {
-            // Создаем контейнер с вертикальным расположением элементов
+            Vector2 headerSize = HeaderStyle.CalcSize(contentNode.HeaderContent);
+            Vector2 bodySize = BodyStyle.CalcSize(contentNode.BodyContent);
+            float padding = 10f;
             GUILayout.BeginArea(rect);
             {
                 GUILayout.BeginVertical();
                 {
-                    // Заголовок с авто-подбором размера текста
-                    GUILayout.Label(node.HeaderContent, HeaderStyle, 
-                        GUILayout.ExpandWidth(true), 
+                    GUILayout.Label(contentNode.HeaderContent, HeaderStyle,
+                        GUILayout.ExpandWidth(true),
                         GUILayout.Height(headerSize.y));
-            
-                    // Тело с авто-подбором размера текста
-                    GUILayout.Label(node.BodyContent, BodyStyle, 
-                        GUILayout.ExpandWidth(true), 
+                    GUILayout.Label(contentNode.BodyContent, BodyStyle,
+                        GUILayout.ExpandWidth(true),
                         GUILayout.Height(bodySize.y));
                 }
                 GUILayout.EndVertical();
@@ -385,6 +407,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             GUILayout.EndArea();
         }
 
+        /// <summary>
+        /// Draws the node status (state icon).
+        /// </summary>
         private static void DrawNodeStatus(Node node, Rect rect)
         {
             if (node.State == NodeState.Success)
@@ -395,17 +420,64 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             {
                 DrawTexture(rect, BehaviorTreeConfig.Instance.failureSymbol, BehaviorTreeConfig.Instance.failureColor);
             }
+            else if (node.State == NodeState.Running)
+            {
+                DrawTexture(rect, BehaviorTreeConfig.Instance.runningSymbol, BehaviorTreeConfig.Instance.runningColor);
+            }
         }
 
+        /// <summary>
+        /// Draws a connection between two nodes.
+        /// </summary>
         private void DrawConnection(Vector2 fromNodeSize, Vector2 toNodeSize, Vector2 from, Vector2 to)
         {
             Vector3 start = from + panOffset + new Vector2(fromNodeSize.x / 2f, fromNodeSize.y);
             Vector3 end = to + panOffset + new Vector2(toNodeSize.x / 2f, 0);
-
             Vector3 startTan = start + Vector3.up * 30f;
             Vector3 endTan = end + Vector3.down * 30f;
-
             Handles.DrawBezier(start, end, startTan, endTan, Color.gray, null, 3f);
         }
+
+        /// <summary>
+        /// Helper method for drawing a texture with color.
+        /// </summary>
+        public static void DrawTexture(Rect r, Texture2D tex, Color c)
+        {
+            GUI.DrawTexture(r, tex, ScaleMode.ScaleToFit, true, 0f, c, 0f, 0f);
+        }
+
+        /// <summary>
+        /// Draws the grid (static method).
+        /// </summary>
+        public static void DrawGrid(Rect canvas, Texture texture, float zoom, Vector2 pan)
+        {
+            var size = canvas.size;
+            var center = size / 2f;
+            float xOffset = -(center.x * zoom + pan.x) / texture.width;
+            float yOffset = ((center.y - size.y) * zoom + pan.y) / texture.height;
+            Vector2 tileOffset = new Vector2(xOffset, yOffset);
+            float tileAmountX = Mathf.Round(size.x * zoom) / texture.width;
+            float tileAmountY = Mathf.Round(size.y * zoom) / texture.height;
+            Vector2 tileAmount = new Vector2(tileAmountX, tileAmountY);
+            GUI.DrawTextureWithTexCoords(canvas, texture, new Rect(tileOffset, tileAmount));
+        }
+        #endregion
+
+        #region Utils
+        /// <summary>
+        /// Gets the color for the node state.
+        /// </summary>
+        private Color GetStateColor(NodeState state)
+        {
+            return state switch
+            {
+                NodeState.Running => BehaviorTreeConfig.Instance.runningColor,
+                NodeState.Success => BehaviorTreeConfig.Instance.successColor,
+                NodeState.Failure => BehaviorTreeConfig.Instance.failureColor,
+                NodeState.NotActive => BehaviorTreeConfig.Instance.defaultNodeBackgroundColor,
+                _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
+            };
+        }
+        #endregion
     }
 }

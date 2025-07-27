@@ -6,15 +6,18 @@ namespace Plugins.BehaviorTree.Runtime
     // Main BehaviorTree class to manage ticking and reset
     public class BehaviorTree
     {
+        public string TreeName { get; private set; }
+
         private readonly Node root;
 
         public NodeState LastState { get; private set; } = NodeState.NotActive;
 
         public Node Root => root;
 
-        public BehaviorTree(Node root)
+        public BehaviorTree(Node root, string treeName = "")
         {
             this.root = root;
+            TreeName = treeName;
         }
 
         // Call each Update()

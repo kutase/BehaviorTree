@@ -21,15 +21,6 @@ namespace Plugins.BehaviorTree.Runtime
             Tree = null;
         }
 
-        // private void Start()
-        // {
-        //     var tree = new BehaviorTree(new Sequence(
-        //         new Delay(5f),
-        //         new ForceFailure()
-        //     ));
-        //     StartTree(tree);
-        // }
-
         private void Update()
         {
             if (Tree == null)
