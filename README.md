@@ -175,9 +175,9 @@ using Plugins.BehaviorTree.Runtime.Nodes.Composites;
 using Zenject;
 
 //...
-public class GoToTargetNode : SetTargetBase
+public class GoToTargetNode : SetTargetBaseNode
  {
-     [Inject] private _Scripts.Environment.Environment _environment;
+     [Inject] private IEnvironment _environment;
      [Inject] private IRandomizer _randomizer;
 
      protected override void OnEnter()
