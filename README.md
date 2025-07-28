@@ -97,6 +97,12 @@ The package includes a built-in visualizer for debugging and inspecting behavior
 2. Select a GameObject with a `BehaviorTreeRunner` component to view its currently running tree.  
 3. Node states are color-coded and update in real time as the tree executes.
 
+### Tree Visualization
+
+<img width="733" height="442" alt="grafik" src="https://github.com/user-attachments/assets/6acc11ea-194f-48a7-b8e9-90b968d737aa" />
+
+
+
 ## Example: Creating a Simple Behavior Tree
 
 ```csharp
@@ -182,10 +188,6 @@ public class TreeFactory
     }
 }
 ```
-
-## Tree Visualization
-
-<img src="https://github.com/user-attachments/assets/b301f622-65c9-46af-a07f-d82cf9e0ffa2" alt="Behavior Tree Visualization" width="1442" height="687" />
 
 ## License
 
