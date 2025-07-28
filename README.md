@@ -122,7 +122,7 @@ var tree = new BehaviorTree(
 
 ## Running a Behavior Tree in Unity
 
-Attach the `BehaviorTreeRunner` MonoBehaviour to a GameObject and start the tree:
+Attach the `BehaviorTreeRunner` component to a GameObject and start the tree:
 
 ```csharp
 public class ExampleRunner : MonoBehaviour
@@ -173,6 +173,20 @@ This package works seamlessly with Zenject. Use a `GameObjectContext` to provide
 using Plugins.BehaviorTree.Runtime;
 using Plugins.BehaviorTree.Runtime.Nodes.Composites;
 using Zenject;
+
+//...
+public class GoToTargetNode : SetTargetBase
+ {
+     [Inject] private _Scripts.Environment.Environment _environment;
+     [Inject] private IRandomizer _randomizer;
+
+     protected override void OnEnter()
+     {
+         var exitPoint = _randomizer.SelectRandomElement(_environment.GetExitPointsPark());
+         SetTarget(exitPoint);
+     }
+ }
+//...
 
 public class TreeFactory
 {
