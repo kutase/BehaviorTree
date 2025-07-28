@@ -115,6 +115,10 @@ public class GoToLaundryClientBehaviorTreeCreator : INPCClientBehaviorTreeCreato
 }
 ```
 
+### Tree visualization:
+<img width="1442" height="687" alt="image" src="https://github.com/user-attachments/assets/b301f622-65c9-46af-a07f-d82cf9e0ffa2" />
+
+
 Where `SelectEquipment` and `GoToLaundry` are custom nodes:
 
 ```csharp
