@@ -1,41 +1,43 @@
 # Behavior Tree
 
-AI Classes and Tools to create configurable artificial intelligence for Unity based on Behavior Trees.
+AI classes and tools for creating configurable artificial intelligence in Unity using Behavior Trees.
 
 ## Installation
 
-In Unity Package Manager, click `+` → `Add package from git URL...` and paste:
+1. In the Unity Package Manager, click **+** → **Add package from Git URL...**
+2. Paste the following URL:
 
-```
-https://github.com/kutase/BehaviorTree.git
-```
+   ```
+   https://github.com/kutase/BehaviorTree.git
+   ```
 
 ## Overview
 
-This package provides a flexible Behavior Tree implementation for Unity, allowing you to build AI logic using composable nodes (composites, decorators, and tasks).
+This package provides a flexible implementation of Behavior Trees for Unity, allowing you to build AI logic using composable nodes (composites, decorators, and tasks).
 
 ## Core Concepts
 
-- **BehaviorTree**: The main class that manages the execution of a tree of nodes.
-- **Node**: The base class for all behavior tree nodes. Nodes return a `NodeState` (`Running`, `Success`, `Failure`).
-- **Composite Nodes**: Nodes that have children (e.g., `Sequence`, `Selector`).
-- **Task Nodes**: Leaf nodes that perform actions or checks (e.g., `Delay`, custom tasks).
+* **BehaviorTree**: The main class that manages the execution of a tree of nodes.
+* **Node**: The base class for all behavior tree nodes. Nodes return a `NodeState` (`Running`, `Success`, or `Failure`).
+* **Composite Nodes**: Nodes that contain multiple children (e.g., `Sequence`, `Selector`).
+* **Decorator Nodes**: Nodes that modify the behavior of a single child (e.g., `Repeat`, `Inverter`).
+* **Task Nodes**: Leaf nodes that perform actions or checks (e.g., `Delay`, custom task nodes).
 
 ## Node States
 
-- `Running`: The node is still executing.
-- `Success`: The node finished successfully.
-- `Failure`: The node failed.
+* **Running**: The node is still executing.
+* **Success**: The node completed successfully.
+* **Failure**: The node failed.
 
-> **Note:** The `NotActive` state is used internally for the visualizer and should not be returned from custom nodes.
+> **Note:** The `NotActive` state is used internally by the visualizer and should not be returned by custom nodes.
 
 ## Behavior Tree Visualizer
 
-The package includes a built-in visualizer for debugging and inspecting behavior trees at runtime.
+The package includes a built-in visualizer for debugging and inspecting behavior trees at runtime:
 
-- Open the visualizer via **Window → Behavior Tree Viewer** in the Unity Editor.
-- The visualizer displays the currently running tree for the selected GameObject with a `BehaviorTreeRunner` component.
-- Node states are color-coded and updated in real time as the tree executes.
+1. Open it via **Window → Behavior Tree Viewer** in the Unity Editor.
+2. Select a GameObject with a `BehaviorTreeRunner` component to view its currently running tree.
+3. Node states are color-coded and update in real time as the tree executes.
 
 ## Example: Creating a Simple Behavior Tree
 
@@ -44,7 +46,7 @@ using Plugins.BehaviorTree.Runtime;
 using Plugins.BehaviorTree.Runtime.Nodes.Composites;
 using Plugins.BehaviorTree.Runtime.Nodes.Tasks;
 
-// Create a tree: Sequence(Delay(2s), ForceFailure())
+// Create a tree: Sequence(Delay(2f), ForceFailure())
 var tree = new BehaviorTree(
     new Sequence(
         new Delay(2f),
@@ -59,17 +61,23 @@ var tree = new BehaviorTree(
 Attach the `BehaviorTreeRunner` MonoBehaviour to a GameObject and start the tree:
 
 ```csharp
-using Plugins.BehaviorTree.Runtime;
-using UnityEngine;
-
 public class ExampleRunner : MonoBehaviour
 {
-    public BehaviorTreeRunner runner;
+    public BehaviorTreeRunner behaviorTreeRunner;
 
-    void Start()
+    public async void RunTree()
     {
-        var tree = /* create your tree here */;
-        runner.StartTree(tree);
+        // Create your tree here
+        var tree = /* create your tree */;
+        behaviorTreeRunner.StartTree(tree);
+
+        // Wait until the tree finishes executing
+        while (behaviorTreeRunner.TreeState == NodeState.Running)
+        {
+            await UniTask.Yield();
+        }
+
+        behaviorTreeRunner.StopTree();
     }
 }
 ```
@@ -81,69 +89,46 @@ Create your own nodes by inheriting from `Node`:
 ```csharp
 using Plugins.BehaviorTree.Runtime.Nodes;
 
-public class CustomAction : Node
+public class CustomActionNode : Node
 {
     protected override NodeState Run()
     {
-        // Your logic here
+        // Your custom logic here
         return NodeState.Success;
     }
 }
 ```
 
-Custom nodes should only return `Running`, `Success`, or `Failure`.
+Custom nodes should only return `NodeState.Running`, `NodeState.Success`, or `NodeState.Failure`.
 
-## Real-World Example
+## Example with Zenject
 
-A more advanced tree using dependency injection (Zenject) and custom nodes:
+This package works seamlessly with Zenject. Use a `GameObjectContext` to provide dependencies to nodes:
 
 ```csharp
 using Plugins.BehaviorTree.Runtime;
 using Plugins.BehaviorTree.Runtime.Nodes.Composites;
 using Zenject;
 
-public class GoToLaundryClientBehaviorTreeCreator : INPCClientBehaviorTreeCreator, IEarlyContainerConstructable
+public class TreeFactory
 {
     public BehaviorTree CreateTree(DiContainer container)
     {
-        var tree = new Sequence(
-            container.Instantiate<SelectEquipment>(new object[] { "BagEquipment" }),
-            container.Instantiate<GoToLaundry>()
+        var sequence = new Sequence(
+            container.Instantiate<SelectEquipmentNode>(new object[] { "BagEquipment" }),
+            container.Instantiate<GoToTargetNode>(),
+            container.Instantiate<DespawnCharacterNode>()
         );
-        return new BehaviorTree(tree, "Go to Laundry");
+
+        return new BehaviorTree(sequence, "Go to Laundry");
     }
 }
 ```
 
-### Tree visualization:
-<img width="1442" height="687" alt="image" src="https://github.com/user-attachments/assets/b301f622-65c9-46af-a07f-d82cf9e0ffa2" />
+## Tree Visualization
 
-
-Where `SelectEquipment` and `GoToLaundry` are custom nodes:
-
-```csharp
-public class SelectEquipment : Node
-{
-    [Inject] private NPCEquipment _equipment;
-    private string _itemId;
-    public SelectEquipment(string itemId) { _itemId = itemId; }
-    protected override NodeState Run()
-    {
-        _equipment.SetContext(_itemId);
-        return NodeState.Success;
-    }
-}
-
-public class GoToLaundry : SetTargetBase
-{
-    [Inject] private Environment _environment;
-    protected override void OnEnter()
-    {
-        SetTarget(_environment.LaundryEntrance);
-    }
-}
-```
+<img src="https://github.com/user-attachments/assets/b301f622-65c9-46af-a07f-d82cf9e0ffa2" alt="Behavior Tree Visualization" width="1442" height="687" />
 
 ## License
 
-MIT
+This project is licensed under the MIT License.
