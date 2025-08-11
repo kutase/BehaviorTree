@@ -23,6 +23,93 @@ This package provides a flexible implementation of Behavior Trees for Unity, all
 * **Decorator Nodes**: Nodes that modify the behavior of a single child (e.g., `Repeat`, `Inverter`).
 * **Task Nodes**: Leaf nodes that perform actions or checks (e.g., `Delay`, custom task nodes).
 
+---
+
+## Node Reference
+
+### Abstract Base Classes
+
+- **Node**  
+  The abstract base class for all behavior tree nodes.
+  - Key methods:
+    - `Tick()`: Starts node execution, handles enter/exit logic.
+    - `Run()`: Abstract method; implement your node's main logic here.
+    - `OnEnter()`, `OnExit()`: Hooks called when the node starts and finishes.
+  - Properties:
+    - `Name`, `Description`: For editor/debug display.
+    - `State`: Current state (`NodeState`).
+
+- **Composite**  
+  Abstract class for composite nodes (contain multiple child nodes).
+  - Properties:
+    - `Children`: List of child nodes.
+  - Constructor takes a collection of child nodes.
+
+- **Decorator**  
+  Abstract class for decorators (wrap a single child node).
+  - Properties:
+    - `Child`: The wrapped child node.
+  - Constructor takes a single child node.
+  - By default, simply ticks the child node.
+
+---
+
+### Implemented Composite Nodes
+
+- **Sequence**  
+  Executes child nodes in order (AND logic).
+  - If any child returns `Failure`, the sequence returns `Failure`.
+  - If all children return `Success`, returns `Success`.
+  - If a child returns `Running`, returns `Running`.
+
+- **Selector**  
+  Executes child nodes in order (OR logic).
+  - If any child returns `Success`, the selector returns `Success`.
+  - If all children return `Failure`, returns `Failure`.
+  - If a child returns `Running`, returns `Running`.
+
+---
+
+### Implemented Decorators
+
+- **IfElse**  
+  Decorator that chooses between two child nodes based on a condition (`Func<bool>`).
+  - Constructor takes: a condition, an 'if' node, and an 'else' node.
+  - On each tick, selects which node to run based on the condition result.
+
+---
+
+### Implemented Tasks (Leaf Nodes)
+
+- **Delay**  
+  Leaf node that waits for a specified number of seconds before returning `Success`.
+  - Constructor takes the duration (seconds).
+  - Returns `Running` until the time elapses, then returns `Success`.
+
+- **ForceFailure**  
+  Leaf node that always returns `Failure`.
+
+---
+
+### Example: Creating Custom Nodes
+
+```csharp
+public class MyCustomTask : Node
+{
+    protected override NodeState Run()
+    {
+        // Your logic here
+        return NodeState.Success;
+    }
+}
+
+public class MyCustomComposite : Composite
+{
+    public MyCustomComposite(IEnumerable<Node> children) : base(children) { }
+    // Implement your own traversal logic
+}
+```
+
 ## Node States
 
 * **Running**: The node is still executing.

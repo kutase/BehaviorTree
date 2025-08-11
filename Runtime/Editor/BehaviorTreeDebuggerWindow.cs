@@ -28,8 +28,8 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private bool firstCenter = true;
 
         // Spacing between nodes
-        private readonly float verticalSpacing = 100;
-        private readonly float horizontalSpacing = 30;
+        private readonly float verticalSpacing = 50;
+        private readonly float horizontalSpacing = 20;
 
         // Styles
         private GUIStyle treeNameStatusStyle;
@@ -206,22 +206,71 @@ namespace Plugins.BehaviorTree.Runtime.Editor
 
         #region Layout
         /// <summary>
-        /// Recursively lays out the tree nodes.
+        /// Вычисляет ширину поддерева, чтобы избежать наложений
+        /// </summary>
+        private float GetSubtreeWidth(Node node)
+        {
+            var size = GetNodeSize(node);
+
+            if (node is Composite composite && composite.Children.Count > 0)
+            {
+                float totalWidth = 0f;
+                for (int i = 0; i < composite.Children.Count; i++)
+                {
+                    var child = composite.Children[i];
+                    float childWidth = GetSubtreeWidth(child);
+                    totalWidth += childWidth;
+
+                    if (i < composite.Children.Count - 1)
+                        totalWidth += GetDynamicSpacing(child); // динамический отступ
+                }
+                return Mathf.Max(size.x, totalWidth);
+            }
+            else if (node is Decorator decorator && decorator.Child != null)
+            {
+                return Mathf.Max(size.x, GetSubtreeWidth(decorator.Child));
+            }
+            else
+            {
+                return size.x;
+            }
+        }
+
+        /// <summary>
+        /// Динамический горизонтальный отступ, чтобы ноды не накладывались
+        /// </summary>
+        private float GetDynamicSpacing(Node node)
+        {
+            // Минимальный отступ + половина ширины ноды
+            return horizontalSpacing; //horizontalSpacing + GetNodeSize(node).x * 0.5f;
+        }
+
+        /// <summary>
+        /// Рекурсивно раскладывает дерево, с учётом ширины поддеревьев и динамического spacing
         /// </summary>
         private void Layout(Node node, Vector2 origin)
         {
+            var size = GetNodeSize(node);
+
             if (node is Composite composite && composite.Children.Count > 0)
             {
-                List<Vector2> childPositions = new();
-                float xOffset = 0f;
+                float totalChildrenWidth = GetSubtreeWidth(node);
+                float x = origin.x - totalChildrenWidth / 2f;
 
-                foreach (var child in composite.Children)
+                List<Vector2> childPositions = new();
+
+                for (int i = 0; i < composite.Children.Count; i++)
                 {
-                    var childNodeSize = GetNodeSize(child);
-                    Layout(child, origin + new Vector2(xOffset, verticalSpacing));
-                    Vector2 childPos = positions[child];
-                    childPositions.Add(childPos);
-                    xOffset += childNodeSize.x + horizontalSpacing;
+                    var child = composite.Children[i];
+                    float childWidth = GetSubtreeWidth(child);
+                    float childX = x + childWidth / 2f;
+
+                    Layout(child, new Vector2(childX, origin.y + size.y + verticalSpacing));
+                    childPositions.Add(positions[child]);
+
+                    x += childWidth;
+                    if (i < composite.Children.Count - 1)
+                        x += GetDynamicSpacing(child);
                 }
 
                 float midX = (childPositions.First().x + childPositions.Last().x) / 2f;
@@ -229,7 +278,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             }
             else if (node is Decorator decorator && decorator.Child != null)
             {
-                Layout(decorator.Child, origin + new Vector2(0, verticalSpacing));
+                Layout(decorator.Child, origin + new Vector2(0, size.y + verticalSpacing));
                 Vector2 childPos = positions[decorator.Child];
                 positions[node] = new Vector2(childPos.x, origin.y);
             }
