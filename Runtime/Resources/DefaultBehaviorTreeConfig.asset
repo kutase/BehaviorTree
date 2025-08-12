@@ -9,18 +9,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 29b680a1edf24d13ae2bd32ff0101d45, type: 3}
+  m_Script: {fileID: 11500000, guid: 9d696778a5e41e844bd980d3c21ae099, type: 3}
   m_Name: DefaultBehaviorTreeConfig
   m_EditorClassIdentifier: 
-  gridTexture: {fileID: 2800000, guid: dd96d55fe839c964bb7e4069064d455a, type: 3}
-  nodeGradient: {fileID: 2800000, guid: e7082292cf80bea4fb0ef261d46ad239, type: 3}
-  failureSymbol: {fileID: 2800000, guid: 01a55655d992ef24bb30b4d42549a60b, type: 3}
-  successSymbol: {fileID: 2800000, guid: 6547b07bfa6427d4a9dd0be90de5e67e, type: 3}
-  runningSymbol: {fileID: 2800000, guid: 7f54bef17a855488983853702438a942, type: 3}
-  defaultNodeBackgroundColor: {r: 0.6226415, g: 0.6226415, b: 0.6226415, a: 1}
-  headerColor: {r: 0.16981119, g: 0.16981119, b: 0.16981119, a: 1}
-  descriptionColor: {r: 0.32614553, g: 0.32614553, b: 0.32614553, a: 1}
-  treeNameColor: {r: 0.9150943, g: 0.9150943, b: 0.9150943, a: 1}
-  runningColor: {r: 0.10196078, g: 0.9836048, b: 1, a: 1}
-  successColor: {r: 0.3066038, g: 1, b: 0.6434876, a: 1}
-  failureColor: {r: 1, g: 0.4301899, b: 0.36320752, a: 1}
+  gridTexture: {fileID: 2800000, guid: 9e3f34033c68a6345b1c680d2b9dc672, type: 3}
+  nodeGradient: {fileID: 2800000, guid: 8b20174c847e2a740ab0bda54ec4877f, type: 3}
+  failureSymbol: {fileID: 2800000, guid: 529a7176d2eaa0040964640d58d0a987, type: 3}
+  successSymbol: {fileID: 2800000, guid: a859618a23ee2304bb1bef0255f19de7, type: 3}
+  runningSymbol: {fileID: 2800000, guid: 08b3bf50e4f07364095cc68f550eea47, type: 3}
+  defaultNodeBackgroundColor: {r: 0.7142856, g: 0.7142856, b: 0.7142856, a: 1}
+  headerColor: {r: 0.21293801, g: 0.21293801, b: 0.21293801, a: 1}
+  descriptionColor: {r: 0.45552552, g: 0.44877243, b: 0.44877243, a: 1}
+  treeNameColor: {r: 0.8706199, g: 0.8677754, b: 0.8013927, a: 1}
+  runningColor: {r: 0.26819396, g: 0.9538217, b: 1, a: 1}
+  successColor: {r: 0.03638804, g: 1, b: 0.54844844, a: 1}
+  failureColor: {r: 0.93530995, g: 0.27597448, b: 0.21554974, a: 1}

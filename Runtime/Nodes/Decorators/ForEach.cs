@@ -13,6 +13,7 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
         protected List<T> currentList;
         protected T currentElement;
         protected bool isInitialized = false;
+        protected bool isProcessingElement = false;
 
         /// <summary>
         /// Override this method to provide the list to iterate through.
@@ -52,17 +53,19 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
         protected override void OnEnter()
         {
             base.OnEnter();
-            currentIndex = -1;
+            currentIndex = 0;
             currentList = GetList();
             isInitialized = true;
+            isProcessingElement = false;
         }
 
         protected override void OnExit()
         {
             base.OnExit();
-            currentIndex = -1;
+            currentIndex = 0;
             currentElement = default(T);
             isInitialized = false;
+            isProcessingElement = false;
 
             ClearList();
         }
@@ -75,13 +78,10 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
             }
 
             // If we haven't started or finished the current element
-            if (currentIndex < 0 || currentIndex >= currentList.Count)
+            if (!isProcessingElement)
             {
-                // Move to next element
-                currentIndex++;
-                
                 // Check if we've processed all elements
-                if (currentIndex >= currentList.Count)
+                if (currentIndex == currentList.Count)
                 {
                     return NodeState.Success;
                 }
@@ -89,6 +89,8 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
                 // Get current element and notify
                 currentElement = currentList[currentIndex];
                 OnElementStart(currentElement, currentIndex);
+
+                isProcessingElement = true;
             }
 
             // Execute child node
@@ -102,6 +104,9 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
 
             // Child completed, notify and move to next element
             OnElementComplete(currentElement, currentIndex, childResult);
+
+            isProcessingElement = false;
+            currentIndex++;
 
             return NodeState.Running; // Continue with next element
         }
