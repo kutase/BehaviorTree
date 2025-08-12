@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
 {
     // Decorator wraps one child node
@@ -9,9 +7,10 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
 
         public Node Child => child;
 
-        public Decorator(Node child)
+        public virtual Decorator WithChild(Node child)
         {
             this.child = child;
+            return this;
         }
 
         protected override NodeState Run()

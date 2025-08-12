@@ -11,7 +11,6 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
         private readonly Node ifNode;
 
         public IfElse(Func<bool> condition, Node ifNode, Node elseNode)
-            : base(condition() ? ifNode : elseNode)
         {
             this.condition = condition;
             this.ifNode = ifNode;
