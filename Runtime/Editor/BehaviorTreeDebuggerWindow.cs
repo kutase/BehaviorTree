@@ -28,8 +28,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private bool firstCenter = true;
 
         // Spacing between nodes
-        private readonly float verticalSpacing = 50;
-        private readonly float horizontalSpacing = 20;
+        private readonly float verticalSpacing = 80;
+        private readonly float horizontalSpacing = 40;
+        private readonly float minVerticalSpacing = 30; // minimum vertical spacing between nodes
 
         // Styles
         private GUIStyle treeNameStatusStyle;
@@ -206,7 +207,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
 
         #region Layout
         /// <summary>
-        /// Вычисляет ширину поддерева, чтобы избежать наложений
+        /// Calculates the width of a subtree to avoid overlapping
         /// </summary>
         private float GetSubtreeWidth(Node node)
         {
@@ -222,7 +223,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                     totalWidth += childWidth;
 
                     if (i < composite.Children.Count - 1)
-                        totalWidth += GetDynamicSpacing(child); // динамический отступ
+                        totalWidth += GetDynamicSpacing(child); // dynamic spacing between child nodes
                 }
                 return Mathf.Max(size.x, totalWidth);
             }
@@ -237,16 +238,17 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         }
 
         /// <summary>
-        /// Динамический горизонтальный отступ, чтобы ноды не накладывались
+        /// Dynamic horizontal spacing to prevent node overlapping
         /// </summary>
         private float GetDynamicSpacing(Node node)
         {
-            // Минимальный отступ + половина ширины ноды
-            return horizontalSpacing; //horizontalSpacing + GetNodeSize(node).x * 0.5f;
+            // Minimum spacing + part of node width to prevent overlapping
+            var nodeSize = GetNodeSize(node);
+            return horizontalSpacing + nodeSize.x * 0.4f;
         }
 
         /// <summary>
-        /// Рекурсивно раскладывает дерево, с учётом ширины поддеревьев и динамического spacing
+        /// Recursively lays out the tree, taking into account subtree widths and dynamic spacing
         /// </summary>
         private void Layout(Node node, Vector2 origin)
         {
@@ -265,7 +267,8 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                     float childWidth = GetSubtreeWidth(child);
                     float childX = x + childWidth / 2f;
 
-                    Layout(child, new Vector2(childX, origin.y + size.y + verticalSpacing));
+                    // Use maximum spacing to prevent overlapping
+                    Layout(child, new Vector2(childX, origin.y + size.y + Mathf.Max(verticalSpacing, minVerticalSpacing)));
                     childPositions.Add(positions[child]);
 
                     x += childWidth;
@@ -278,7 +281,8 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             }
             else if (node is Decorator decorator && decorator.Child != null)
             {
-                Layout(decorator.Child, origin + new Vector2(0, size.y + verticalSpacing));
+                // Place child node below with minimum spacing
+                Layout(decorator.Child, origin + new Vector2(0, size.y + Mathf.Max(verticalSpacing, minVerticalSpacing)));
                 Vector2 childPos = positions[decorator.Child];
                 positions[node] = new Vector2(childPos.x, origin.y);
             }
