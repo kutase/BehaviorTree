@@ -5,8 +5,10 @@ using Plugins.BehaviorTree.Runtime.Configs;
 using Plugins.BehaviorTree.Runtime.Nodes;
 using Plugins.BehaviorTree.Runtime.Nodes.Composites;
 using Plugins.BehaviorTree.Runtime.Nodes.Decorators;
-using UnityEditor;
 using UnityEngine;
+
+#if UNITY_EDITOR
+using UnityEditor;
 
 namespace Plugins.BehaviorTree.Runtime.Editor
 {
@@ -534,3 +536,4 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         #endregion
     }
 }
+#endif
