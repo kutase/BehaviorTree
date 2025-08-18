@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Plugins.BehaviorTree.Runtime.Nodes;
 
 namespace Plugins.BehaviorTree.Runtime

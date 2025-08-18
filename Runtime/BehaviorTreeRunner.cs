@@ -6,9 +6,16 @@ namespace Plugins.BehaviorTree.Runtime
     // Usage in a MonoBehaviour
     public class BehaviorTreeRunner : MonoBehaviour
     {
+        [SerializeField] private bool _runTreeInUpdate = true;
+
         public BehaviorTree Tree { get; private set; }
 
         public NodeState TreeState => Tree?.LastState ?? NodeState.NotActive;
+
+        public void ReplaceTree(BehaviorTree tree)
+        {
+            Tree = tree;
+        }
 
         public void StartTree(BehaviorTree tree)
         {
@@ -23,6 +30,9 @@ namespace Plugins.BehaviorTree.Runtime
 
         private void Update()
         {
+            if (!_runTreeInUpdate)
+                return;
+
             if (Tree == null)
                 return;
 
