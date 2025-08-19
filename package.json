@@ -1,6 +1,6 @@
-﻿{
+{
   "name": "com.nebulateme.behaviortree",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "displayName": "Behavior Tree",
   "description": "AI Behavior Tree for Unity",
   "unity": "2020.3",
