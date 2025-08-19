@@ -19,8 +19,14 @@ MonoBehaviour:
   runningSymbol: {fileID: 2800000, guid: 08b3bf50e4f07364095cc68f550eea47, type: 3}
   defaultNodeBackgroundColor: {r: 0.7142856, g: 0.7142856, b: 0.7142856, a: 1}
   headerColor: {r: 0.21293801, g: 0.21293801, b: 0.21293801, a: 1}
-  descriptionColor: {r: 0.45552552, g: 0.44877243, b: 0.44877243, a: 1}
+  descriptionColor: {r: 0.3773585, g: 0.3773585, b: 0.3773585, a: 1}
   treeNameColor: {r: 0.8706199, g: 0.8677754, b: 0.8013927, a: 1}
   runningColor: {r: 0.26819396, g: 0.9538217, b: 1, a: 1}
   successColor: {r: 0.03638804, g: 1, b: 0.54844844, a: 1}
   failureColor: {r: 0.93530995, g: 0.27597448, b: 0.21554974, a: 1}
+  headerFontSize: 14
+  bodyFontSize: 12
+  defaultZoom: 1
+  minZoom: 0.2
+  maxZoom: 1.5
+  zoomSensitivity: 0.1

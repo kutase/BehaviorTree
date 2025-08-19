@@ -22,6 +22,16 @@ namespace Plugins.BehaviorTree.Runtime.Configs
         public Color successColor = new Color(0.1f, 1f, 0.54f, 0.25f);
         public Color failureColor = new Color(1f, 0.1f, 0.1f, 0.25f);
 
+        [Space()]
+        public int headerFontSize = 20;
+        public int bodyFontSize = 14;
+
+        [Space()]
+        public float defaultZoom = 0.5f;
+        public float minZoom = 0.2f;
+        public float maxZoom = 1.5f;
+        public float zoomSensitivity = 0.1f; // wheel -> scale
+
         private static BehaviorTreeConfig instance = null;
 
         public static BehaviorTreeConfig Instance

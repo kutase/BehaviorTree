@@ -20,6 +20,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private Vector2 dragStartPos;
         private bool dragging = false;
 
+        // Zoom
+        private float zoom;
+
         // Node positions and sizes
         private Dictionary<Node, Vector2> positions = new();
         private Dictionary<Node, Vector2> nodeSizes = new();
@@ -74,7 +77,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 OnSelectionChange();
             }
 
+            // Input handling (pan + zoom)
             HandlePanInput();
+            HandleZoomInput();
 
             if (currentTree != null && currentTree.Root != null)
             {
@@ -86,6 +91,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 }
 
                 DrawCanvas();
+
+                // Show zoom percentage
+                DrawZoomLabel();
             }
             else
             {
@@ -133,8 +141,19 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             nodeSizes.Clear();
             firstCenter = true;
 
+            ResetZoom();
+
             Repaint();
         }
+
+        private void ResetZoom()
+        {
+            zoom = BehaviorTreeConfig.Instance.defaultZoom;
+
+            HeaderStyle.fontSize = Mathf.RoundToInt(zoom * BehaviorTreeConfig.Instance.headerFontSize);
+            BodyStyle.fontSize = Mathf.RoundToInt(zoom * BehaviorTreeConfig.Instance.bodyFontSize);
+        }
+
         #endregion
 
         #region Styles
@@ -162,6 +181,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             style.clipping = TextClipping.Clip;
             style.stretchWidth = true;
             style.stretchHeight = true;
+            style.fontSize = Mathf.RoundToInt(BehaviorTreeConfig.Instance.headerFontSize * zoom);
             return style;
         }
 
@@ -174,6 +194,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             style.clipping = TextClipping.Clip;
             style.stretchWidth = true;
             style.stretchHeight = true;
+            style.fontSize = Mathf.RoundToInt(BehaviorTreeConfig.Instance.bodyFontSize * zoom);
             return style;
         }
         #endregion
@@ -204,6 +225,56 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 dragging = false;
                 e.Use();
             }
+        }
+
+        /// <summary>
+        /// Handles mouse wheel input for zooming (zoom centered on mouse pointer).
+        /// </summary>
+        private void HandleZoomInput()
+        {
+            Event e = Event.current;
+            if (e.type == EventType.ScrollWheel)
+            {
+                var zoomDirection = e.delta.y;
+
+                // e.delta.y is typically positive when scrolling down, negative when scrolling up.
+                // float delta = -e.delta.y * zoomSensitivity;
+                // float scale = 1f + delta;
+                // if (Mathf.Abs(scale - 1f) > float.Epsilon)
+                // {
+                //     ZoomAt(e.mousePosition, scale);
+                //     e.Use();
+                // }
+
+                float scale = (zoomDirection < 0f) ? (1f - BehaviorTreeConfig.Instance.zoomSensitivity) : (1f + BehaviorTreeConfig.Instance.zoomSensitivity);
+                var nextZoom = zoom * scale;
+
+                ZoomAt(e.mousePosition, nextZoom);
+
+                e.Use();
+            }
+        }
+
+        /// <summary>
+        /// Zooms the canvas keeping the screenPoint under the mouse stationary.
+        /// </summary>
+        /// <param name="screenPoint">Mouse position in screen coordinates (GUI coords)</param>
+        /// <param name="scale">Multiplicative scale to apply to current zoom.</param>
+        private void ZoomAt(Vector2 screenPoint, float scale)
+        {
+            float oldZoom = zoom;
+            float newZoom = Mathf.Clamp(scale, BehaviorTreeConfig.Instance.minZoom, BehaviorTreeConfig.Instance.maxZoom);
+            if (Mathf.Approximately(newZoom, oldZoom))
+                return;
+
+            float finalScale = newZoom / oldZoom;
+
+            // Translate panOffset so that the screenPoint remains pointing to the same logical canvas point.
+            // panOffset is in screen-space pixels; positions are scaled by zoom then offset by panOffset.
+            panOffset = (panOffset - screenPoint) * finalScale + screenPoint;
+
+            zoom = newZoom;
+            Repaint();
         }
         #endregion
 
@@ -310,7 +381,8 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             Vector2 center = new Vector2((minX + maxX) / 2f, (minY + maxY) / 2f);
             Vector2 canvasCenter = position.size / 2f;
 
-            panOffset = canvasCenter - center;
+            // When zoomed, scale the logical center before centering.
+            panOffset = canvasCenter - center * zoom;
         }
         #endregion
 
@@ -362,7 +434,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         {
             foreach (var pair in positions)
             {
-                DrawNode(pair.Key, pair.Value + panOffset);
+                // Convert logical position -> screen position
+                Vector2 screenPos = pair.Value * zoom + panOffset;
+                DrawNode(pair.Key, screenPos);
             }
         }
 
@@ -380,7 +454,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private void DrawGrid(Vector2 size)
         {
             var canvasRect = new Rect(Vector2.zero, size);
-            DrawGrid(canvasRect, BehaviorTreeConfig.Instance.gridTexture, 1f, panOffset);
+            DrawGrid(canvasRect, BehaviorTreeConfig.Instance.gridTexture, zoom, panOffset);
         }
 
         /// <summary>
@@ -399,7 +473,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         /// </summary>
         private Rect GetNodeRect(Node node, Vector2 pos)
         {
-            Vector2 size = GetNodeSize(node);
+            Vector2 size = GetNodeSize(node) * zoom;
             return new Rect(pos.x, pos.y, size.x, size.y);
         }
 
@@ -446,6 +520,10 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             Vector2 headerSize = HeaderStyle.CalcSize(contentNode.HeaderContent);
             Vector2 bodySize = BodyStyle.CalcSize(contentNode.BodyContent);
             float padding = 10f;
+
+            HeaderStyle.fontSize = Mathf.RoundToInt(zoom * BehaviorTreeConfig.Instance.headerFontSize);
+            BodyStyle.fontSize = Mathf.RoundToInt(zoom * BehaviorTreeConfig.Instance.bodyFontSize);
+
             GUILayout.BeginArea(rect);
             {
                 GUILayout.BeginVertical();
@@ -486,11 +564,12 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         /// </summary>
         private void DrawConnection(Vector2 fromNodeSize, Vector2 toNodeSize, Vector2 from, Vector2 to)
         {
-            Vector3 start = from + panOffset + new Vector2(fromNodeSize.x / 2f, fromNodeSize.y);
-            Vector3 end = to + panOffset + new Vector2(toNodeSize.x / 2f, 0);
-            Vector3 startTan = start + Vector3.up * 30f;
-            Vector3 endTan = end + Vector3.down * 30f;
-            Handles.DrawBezier(start, end, startTan, endTan, Color.gray, null, 3f);
+            // Convert logical positions/sizes to screen space
+            Vector3 start = from * zoom + panOffset + new Vector2((fromNodeSize.x * zoom) / 2f, fromNodeSize.y * zoom);
+            Vector3 end = to * zoom + panOffset + new Vector2((toNodeSize.x * zoom) / 2f, 0);
+            Vector3 startTan = start + Vector3.up * (30f * zoom);
+            Vector3 endTan = end + Vector3.down * (30f * zoom);
+            Handles.DrawBezier(start, end, startTan, endTan, Color.gray, null, 3f * zoom);
         }
 
         /// <summary>
@@ -502,18 +581,30 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         }
 
         /// <summary>
-        /// Draws the grid (static method).
+        /// Draw a tiled grid that can be scaled and translated.
         /// </summary>
+        /// <param name="canvas">The area to draw the grid</param>
+        /// <param name="texture">The grid tile texture</param>
+        /// <param name="zoom">Scales the grid by zoom amount</param>
+        /// <param name="pan">Translates the grid pan amount</param>
         public static void DrawGrid(Rect canvas, Texture texture, float zoom, Vector2 pan)
         {
             var size = canvas.size;
             var center = size / 2f;
+
+            // Offset from origin in tile units
             float xOffset = -(center.x * zoom + pan.x) / texture.width;
             float yOffset = ((center.y - size.y) * zoom + pan.y) / texture.height;
+
             Vector2 tileOffset = new Vector2(xOffset, yOffset);
-            float tileAmountX = Mathf.Round(size.x * zoom) / texture.width;
-            float tileAmountY = Mathf.Round(size.y * zoom) / texture.height;
+
+            // Amount of tiles
+            float tileAmountX = Mathf.Round(size.x * (1f / zoom)) / texture.width;
+            float tileAmountY = Mathf.Round(size.y * (1f / zoom)) / texture.height;
+
             Vector2 tileAmount = new Vector2(tileAmountX, tileAmountY);
+
+            // Draw tiled background
             GUI.DrawTextureWithTexCoords(canvas, texture, new Rect(tileOffset, tileAmount));
         }
         #endregion
@@ -532,6 +623,12 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 NodeState.NotActive => BehaviorTreeConfig.Instance.defaultNodeBackgroundColor,
                 _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
             };
+        }
+
+        private void DrawZoomLabel()
+        {
+            var rect = new Rect(position.width - 120f, 10f, 110f, 20f);
+            GUI.Label(rect, $"Zoom: {Mathf.RoundToInt(zoom * 100f)}%", EditorStyles.whiteLabel);
         }
         #endregion
     }
