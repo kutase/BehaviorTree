@@ -401,7 +401,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         }
 
         /// <summary>
-        /// Draws all connections between nodes.
+        /// Draws all connections between nodes; highlights lines that lead to active nodes.
         /// </summary>
         private void DrawConnections()
         {
@@ -415,16 +415,51 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                     {
                         var childNodeSize = GetNodeSize(child);
                         if (positions.TryGetValue(child, out var childPos))
-                            DrawConnection(startNodeSize, childNodeSize, pair.Value, childPos);
+                        {
+                            // Select color/width based on child's state
+                            bool isActive = child.State != NodeState.NotActive;
+                            Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
+                            float lineWidth = (isActive ? 5f : 3f) * Mathf.Max(1f, zoom);
+
+                            DrawConnection(startNodeSize, childNodeSize, pair.Value, childPos, lineColor, lineWidth, isActive);
+                        }
                     }
                 }
                 else if (pair.Key is Decorator dec && dec.Child != null)
                 {
                     var childNodeSize = GetNodeSize(dec.Child);
                     if (positions.TryGetValue(dec.Child, out var childPos))
-                        DrawConnection(startNodeSize, childNodeSize, pair.Value, childPos);
+                    {
+                        bool isActive = dec.Child.State != NodeState.NotActive;
+                        Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
+                        float lineWidth = (isActive ? 5f : 3f) * Mathf.Max(1f, zoom);
+
+                        DrawConnection(startNodeSize, childNodeSize, pair.Value, childPos, lineColor, lineWidth, isActive);
+                    }
                 }
             }
+        }
+
+        /// <summary>
+        /// Draws a connection between two nodes (allows custom color/width and optional glow for highlights).
+        /// </summary>
+        private void DrawConnection(Vector2 fromNodeSize, Vector2 toNodeSize, Vector2 from, Vector2 to, Color color, float width, bool highlighted)
+        {
+            // Convert logical positions/sizes to screen space
+            Vector3 start = from * zoom + panOffset + new Vector2((fromNodeSize.x * zoom) / 2f, fromNodeSize.y * zoom);
+            Vector3 end = to * zoom + panOffset + new Vector2((toNodeSize.x * zoom) / 2f, 0);
+            Vector3 startTan = start + Vector3.up * (30f * zoom);
+            Vector3 endTan = end + Vector3.down * (30f * zoom);
+
+            // If highlighted, draw a subtle glow first (wider, low-alpha), then the main line.
+            if (highlighted && BehaviorTreeConfig.Instance.addGlowToActiveLines)
+            {
+                Color glow = new Color(color.r, color.g, color.b, BehaviorTreeConfig.Instance.activeLineGlowTransparency);
+                Handles.DrawBezier(start, end, startTan, endTan, glow, null, Mathf.Max(1f, width * BehaviorTreeConfig.Instance.activeLineGlowWidth));
+            }
+
+            // Main line
+            Handles.DrawBezier(start, end, startTan, endTan, color, null, Mathf.Max(1f, width));
         }
 
         /// <summary>
@@ -557,19 +592,6 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             {
                 DrawTexture(rect, BehaviorTreeConfig.Instance.runningSymbol, BehaviorTreeConfig.Instance.runningColor);
             }
-        }
-
-        /// <summary>
-        /// Draws a connection between two nodes.
-        /// </summary>
-        private void DrawConnection(Vector2 fromNodeSize, Vector2 toNodeSize, Vector2 from, Vector2 to)
-        {
-            // Convert logical positions/sizes to screen space
-            Vector3 start = from * zoom + panOffset + new Vector2((fromNodeSize.x * zoom) / 2f, fromNodeSize.y * zoom);
-            Vector3 end = to * zoom + panOffset + new Vector2((toNodeSize.x * zoom) / 2f, 0);
-            Vector3 startTan = start + Vector3.up * (30f * zoom);
-            Vector3 endTan = end + Vector3.down * (30f * zoom);
-            Handles.DrawBezier(start, end, startTan, endTan, Color.gray, null, 3f * zoom);
         }
 
         /// <summary>

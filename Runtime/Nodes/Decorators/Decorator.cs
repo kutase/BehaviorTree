@@ -17,5 +17,11 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
         {
             return child.Tick();
         }
+
+        public override void Reset()
+        {
+            base.Reset();
+            child.Reset();
+        }
     }
 }

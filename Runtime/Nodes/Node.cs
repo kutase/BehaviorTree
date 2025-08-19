@@ -37,6 +37,11 @@ namespace Plugins.BehaviorTree.Runtime.Nodes
             return this;
         }
 
+        public virtual void Reset()
+        {
+            state = NodeState.NotActive;
+        }
+
         // Called once before execution when node starts running
         protected virtual void OnEnter()
         {

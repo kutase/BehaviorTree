@@ -13,5 +13,15 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Composites
         {
             children.AddRange(nodes);
         }
+
+        public override void Reset()
+        {
+            base.Reset();
+
+            foreach (var child in children)
+            {
+                child.Reset();
+            }
+        }
     }
 }

@@ -21,6 +21,11 @@ namespace Plugins.BehaviorTree.Runtime.Configs
         public Color runningColor;
         public Color successColor = new Color(0.1f, 1f, 0.54f, 0.25f);
         public Color failureColor = new Color(1f, 0.1f, 0.1f, 0.25f);
+        public Color activeLineColor;
+        public Color defaultLineColor;
+        public bool addGlowToActiveLines = true;
+        public float activeLineGlowWidth = 1.5f;
+        public float activeLineGlowTransparency = 0.2f;
 
         [Space()]
         public int headerFontSize = 20;

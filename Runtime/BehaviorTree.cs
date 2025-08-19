@@ -28,10 +28,7 @@ namespace Plugins.BehaviorTree.Runtime
 
         public void Reset()
         {
-            // You may recreate tree or implement recursive reset if needed
-            // root.CollectNodes(new List<Node>()).ForEach(node => {
-            //     // reflection-based reset of state and started flag if implemented
-            // });
+            root.Reset();
             LastState = NodeState.NotActive;
         }
 
