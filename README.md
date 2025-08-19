@@ -64,12 +64,23 @@ This package provides a flexible implementation of Behavior Trees for Unity, all
   - If all children return `Failure`, returns `Failure`.  
   - If a child returns `Running`, returns `Running`.
 
+- **SelectRandomNode**  
+  Randomly selects one child node to execute.  
+  - **Constructor**: Takes multiple child nodes as parameters.  
+  - **Behavior**: On each entry, randomly selects one child and executes only that child.  
+  - Returns the result of the selected child node.
+
 ### Implemented Decorators
 
 - **IfElse**  
   Chooses between two child nodes based on a condition (`Func<bool>`).  
   - **Constructor**: Takes a condition, an 'if' node, and an 'else' node.  
   - On each tick, runs the 'if' node if the condition is true; otherwise runs the 'else' node.
+
+- **Invert**  
+  Inverts the result of its child node.  
+  - **Constructor**: Takes a single child node.  
+  - **Behavior**: Success becomes Failure, Failure becomes Success, Running remains Running.
 
 ### Implemented Tasks (Leaf Nodes)
 
@@ -195,15 +206,26 @@ The package includes a built-in visualizer for debugging and inspecting behavior
 ```csharp
 using Plugins.BehaviorTree.Runtime;
 using Plugins.BehaviorTree.Runtime.Nodes.Composites;
+using Plugins.BehaviorTree.Runtime.Nodes.Decorators;
 using Plugins.BehaviorTree.Runtime.Nodes.Tasks;
 
-// Create a tree: Sequence(Delay(2f), ForceFailure())
+// Create a tree: Sequence(Delay(2f), Invert(ForceFailure()))
 var tree = new BehaviorTree(
     new Sequence(
         new Delay(2f),
-        new ForceFailure()
+        new Invert(new ForceFailure()) // This will return Success instead of Failure
     ),
     "Simple Example"
+);
+
+// Example with SelectRandomNode: randomly choose between different actions
+var randomTree = new BehaviorTree(
+    new SelectRandomNode(
+        new Delay(1f),
+        new ForceFailure(),
+        new Delay(3f)
+    ),
+    "Random Action Example"
 );
 ```
 
