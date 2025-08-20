@@ -26,6 +26,8 @@ MonoBehaviour:
   failureColor: {r: 0.93530995, g: 0.27597448, b: 0.21554974, a: 1}
   activeLineColor: {r: 0.7540104, g: 0.764151, b: 0.0036044943, a: 1}
   defaultLineColor: {r: 0.4339623, g: 0.4339623, b: 0.4339623, a: 1}
+  defaultLineWidth: 3
+  activeLineWidth: 5
   addGlowToActiveLines: 1
   activeLineGlowWidth: 1.4
   activeLineGlowTransparency: 0.1

@@ -400,11 +400,16 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             DrawNodes();
         }
 
+        private List<(Vector2 fromNodeSize, Vector2 toNodeSize, Vector2 from, Vector2 to, Color color, float width, bool highlighted)> connectionsBuffer = new();
+
         /// <summary>
         /// Draws all connections between nodes; highlights lines that lead to active nodes.
+        /// Uses orthogonal (90°) segments instead of Bezier curves.
         /// </summary>
         private void DrawConnections()
         {
+            connectionsBuffer.Clear();
+
             foreach (var pair in positions)
             {
                 var startNodeSize = GetNodeSize(pair.Key);
@@ -416,12 +421,14 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                         var childNodeSize = GetNodeSize(child);
                         if (positions.TryGetValue(child, out var childPos))
                         {
-                            // Select color/width based on child's state
                             bool isActive = child.State != NodeState.NotActive;
+                            // preserve the same color logic as before (GetStateColor for active)
                             Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
-                            float lineWidth = (isActive ? 5f : 3f) * Mathf.Max(1f, zoom);
+                            // width: try to use config values if present, fallback to literals
 
-                            DrawConnection(startNodeSize, childNodeSize, pair.Value, childPos, lineColor, lineWidth, isActive);
+                            float lineWidth = (isActive ? BehaviorTreeConfig.Instance.activeLineWidth : BehaviorTreeConfig.Instance.defaultLineWidth) * Mathf.Max(1f, zoom);
+
+                            connectionsBuffer.Add((startNodeSize, childNodeSize, pair.Value, childPos, lineColor, lineWidth, isActive));
                         }
                     }
                 }
@@ -432,34 +439,70 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                     {
                         bool isActive = dec.Child.State != NodeState.NotActive;
                         Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
-                        float lineWidth = (isActive ? 5f : 3f) * Mathf.Max(1f, zoom);
 
-                        DrawConnection(startNodeSize, childNodeSize, pair.Value, childPos, lineColor, lineWidth, isActive);
+                        float lineWidth = (isActive ? BehaviorTreeConfig.Instance.activeLineWidth : BehaviorTreeConfig.Instance.defaultLineWidth) * Mathf.Max(1f, zoom);
+
+                        connectionsBuffer.Add((startNodeSize, childNodeSize, pair.Value, childPos, lineColor, lineWidth, isActive));
                     }
                 }
+            }
+
+            foreach (var c in connectionsBuffer)
+            {
+                if (c.highlighted)
+                    continue;
+
+                DrawConnection(c.fromNodeSize, c.toNodeSize, c.from, c.to, c.color, c.width, c.highlighted);
+            }
+
+            foreach (var c in connectionsBuffer)
+            {
+                if (!c.highlighted)
+                    continue;
+
+                DrawConnection(c.fromNodeSize, c.toNodeSize, c.from, c.to, c.color, c.width, c.highlighted);
             }
         }
 
         /// <summary>
-        /// Draws a connection between two nodes (allows custom color/width and optional glow for highlights).
+        /// Draws an orthogonal (right-angle) connection between two nodes.
+        /// If highlighted==true, draws a glow (wider translucent line) then the main line.
         /// </summary>
         private void DrawConnection(Vector2 fromNodeSize, Vector2 toNodeSize, Vector2 from, Vector2 to, Color color, float width, bool highlighted)
         {
             // Convert logical positions/sizes to screen space
-            Vector3 start = from * zoom + panOffset + new Vector2((fromNodeSize.x * zoom) / 2f, fromNodeSize.y * zoom);
-            Vector3 end = to * zoom + panOffset + new Vector2((toNodeSize.x * zoom) / 2f, 0);
-            Vector3 startTan = start + Vector3.up * (30f * zoom);
-            Vector3 endTan = end + Vector3.down * (30f * zoom);
+            Vector2 start = from * zoom + panOffset + new Vector2((fromNodeSize.x * zoom) / 2f, fromNodeSize.y * zoom);
+            Vector2 end = to * zoom + panOffset + new Vector2((toNodeSize.x * zoom) / 2f, 0);
 
-            // If highlighted, draw a subtle glow first (wider, low-alpha), then the main line.
+            // Compute middle Y for the horizontal segment (halfway between start and end)
+            float midY = (start.y + end.y) * 0.5f;
+
+            // Build orthogonal polyline: start -> (start.x, midY) -> (end.x, midY) -> end
+            Vector3 p0 = start;
+            Vector3 p1 = new Vector3(start.x, midY, 0f);
+            Vector3 p2 = new Vector3(end.x, midY, 0f);
+            Vector3 p3 = end;
+
+            // Remember previous Handles.color and restore later
+            Color prevHandlesColor = Handles.color;
+
+            // If highlighted, draw a glow/backline first using same hue but reduced alpha
             if (highlighted && BehaviorTreeConfig.Instance.addGlowToActiveLines)
             {
-                Color glow = new Color(color.r, color.g, color.b, BehaviorTreeConfig.Instance.activeLineGlowTransparency);
-                Handles.DrawBezier(start, end, startTan, endTan, glow, null, Mathf.Max(1f, width * BehaviorTreeConfig.Instance.activeLineGlowWidth));
+                float glowAlpha = Mathf.Clamp01(BehaviorTreeConfig.Instance.activeLineGlowTransparency);
+                Color glowColor = new Color(color.r, color.g, color.b, glowAlpha);
+                float glowWidth = Mathf.Max(1f, width * BehaviorTreeConfig.Instance.activeLineGlowWidth);
+
+                Handles.color = glowColor;
+                Handles.DrawAAPolyLine(glowWidth, p0, p1, p2, p3);
             }
 
-            // Main line
-            Handles.DrawBezier(start, end, startTan, endTan, color, null, Mathf.Max(1f, width));
+            // Draw the main line with full color
+            Handles.color = color;
+            Handles.DrawAAPolyLine(Mathf.Max(1f, width), p0, p1, p2, p3);
+
+            // Restore previous color
+            Handles.color = prevHandlesColor;
         }
 
         /// <summary>
