@@ -20,6 +20,11 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private Vector2 dragStartPos;
         private bool dragging = false;
 
+        // Click detection (to open node script on click)
+        private bool clickCandidate = false;
+        private Vector2 clickStartPos;
+        private const float clickThreshold = 4f; // pixels
+
         // Zoom
         private float zoom;
 
@@ -77,7 +82,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 OnSelectionChange();
             }
 
-            // Input handling (pan + zoom)
+            // Input handling (pan + zoom + clicks)
             HandlePanInput();
             HandleZoomInput();
 
@@ -201,28 +206,51 @@ namespace Plugins.BehaviorTree.Runtime.Editor
 
         #region Input
         /// <summary>
-        /// Handles mouse input for panning.
+        /// Handles mouse input for panning and node clicking.
         /// </summary>
         private void HandlePanInput()
         {
             Event e = Event.current;
             if (e.type == EventType.MouseDown && e.button == 0)
             {
-                dragging = true;
+                // Begin possible click/drag
+                dragging = false; // don't assume pan until we see drag
                 dragStartPos = e.mousePosition;
+                clickStartPos = e.mousePosition;
+                clickCandidate = true;
                 e.Use();
             }
-            else if (e.type == EventType.MouseDrag && e.button == 0 && dragging)
+            else if (e.type == EventType.MouseDrag && e.button == 0)
             {
                 Vector2 delta = e.mousePosition - dragStartPos;
-                panOffset += delta;
-                dragStartPos = e.mousePosition;
-                Repaint();
+
+                // If movement exceeds threshold, consider this a drag (pan)
+                if (!dragging && delta.magnitude > clickThreshold)
+                {
+                    dragging = true;
+                    clickCandidate = false;
+                }
+
+                if (dragging)
+                {
+                    panOffset += delta;
+                    dragStartPos = e.mousePosition;
+                    Repaint();
+                }
+
                 e.Use();
             }
             else if (e.type == EventType.MouseUp && e.button == 0)
             {
+                // If it was a click (no significant drag), handle node click
+                if (clickCandidate && Vector2.Distance(clickStartPos, e.mousePosition) <= clickThreshold)
+                {
+                    OnNodeClicked(e.mousePosition);
+                }
+
+                // Reset flags
                 dragging = false;
+                clickCandidate = false;
                 e.Use();
             }
         }
@@ -236,15 +264,6 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             if (e.type == EventType.ScrollWheel)
             {
                 var zoomDirection = e.delta.y;
-
-                // e.delta.y is typically positive when scrolling down, negative when scrolling up.
-                // float delta = -e.delta.y * zoomSensitivity;
-                // float scale = 1f + delta;
-                // if (Mathf.Abs(scale - 1f) > float.Epsilon)
-                // {
-                //     ZoomAt(e.mousePosition, scale);
-                //     e.Use();
-                // }
 
                 float scale = (zoomDirection < 0f) ? (1f - BehaviorTreeConfig.Instance.zoomSensitivity) : (1f + BehaviorTreeConfig.Instance.zoomSensitivity);
                 var nextZoom = zoom * scale;
@@ -275,6 +294,66 @@ namespace Plugins.BehaviorTree.Runtime.Editor
 
             zoom = newZoom;
             Repaint();
+        }
+        #endregion
+
+        #region Node Click Handling
+        /// <summary>
+        /// Called when user clicks somewhere on the canvas. Checks whether a node was clicked and opens its script.
+        /// </summary>
+        /// <param name="mousePosition">Mouse position in GUI coordinates (screen space)</param>
+        private void OnNodeClicked(Vector2 mousePosition)
+        {
+            if (positions == null || positions.Count == 0)
+                return;
+
+            // iterate in reverse to prioritize nodes drawn later (in case of overlap) — although order is arbitrary here
+            foreach (var pair in positions.Reverse())
+            {
+                Node node = pair.Key;
+                Vector2 screenPos = pair.Value * zoom + panOffset;
+                Rect rect = GetNodeRect(node, screenPos);
+
+                if (rect.Contains(mousePosition))
+                {
+                    OpenNodeScriptForNode(node);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to find and open the MonoScript corresponding to the node's class.
+        /// Scans project MonoScripts and compares GetClass().
+        /// </summary>
+        /// <param name="node">Node instance</param>
+        private void OpenNodeScriptForNode(Node node)
+        {
+            if (node == null)
+                return;
+
+            Type nodeType = node.GetType();
+
+            // Search all MonoScript assets and compare class
+            string[] guids = AssetDatabase.FindAssets("t:MonoScript");
+            foreach (string guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var mono = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+                if (mono == null)
+                    continue;
+
+                var scriptClass = mono.GetClass();
+                if (scriptClass == nodeType)
+                {
+                    // Open the script asset in the code editor
+                    AssetDatabase.OpenAsset(mono);
+                    return;
+                }
+            }
+
+            // Fallback: if not found, show a dialog
+            EditorUtility.DisplayDialog("Script not found", $"C# script file for node type '{nodeType.FullName}' not found in the project assets.", "OK");
         }
         #endregion
 
