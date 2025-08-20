@@ -45,7 +45,8 @@ namespace Plugins.BehaviorTree.Runtime.Nodes
         {
             get
             {
-                if (string.IsNullOrWhiteSpace(description) && !string.IsNullOrWhiteSpace(title))
+                if (string.IsNullOrWhiteSpace(description) &&
+                    (!string.IsNullOrWhiteSpace(title) && title != GetType().Name))
                 {
                     return GetType().Name;
                 }
