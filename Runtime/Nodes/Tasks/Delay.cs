@@ -8,7 +8,7 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Tasks
         private readonly float duration;
         private float elapsed;
 
-        public override string Description => $"Wait: {Mathf.Max(duration - elapsed, 0f):0}s";
+        public override string Description => $"Wait: {Mathf.Max(duration - elapsed, 0f):0.0}s";
 
         public Delay(float seconds)
         {
@@ -24,15 +24,12 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Tasks
         {
             elapsed += Time.deltaTime;
 
+            // updating description
             #if UNITY_EDITOR
             UpdateEditorGui();
             #endif
-            return elapsed >= duration ? NodeState.Success : NodeState.Running;
-        }
 
-        protected override void OnExit()
-        {
-            // Cleanup if needed
+            return elapsed >= duration ? NodeState.Success : NodeState.Running;
         }
     }
 }
