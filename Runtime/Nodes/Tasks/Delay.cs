@@ -2,13 +2,10 @@ using UnityEngine;
 
 namespace Plugins.BehaviorTree.Runtime.Nodes.Tasks
 {
-    // Example Tasks with OnEnter/OnExit
     public class Delay : Node
     {
         private readonly float duration;
         private float elapsed;
-
-        public override string Description => $"Wait: {Mathf.Max(duration - elapsed, 0f):0.0}s";
 
         public Delay(float seconds)
         {
@@ -24,10 +21,7 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Tasks
         {
             elapsed += Time.deltaTime;
 
-            // updating description
-            #if UNITY_EDITOR
-            UpdateEditorGui();
-            #endif
+            Description = $"Wait: {Mathf.Max(duration - elapsed, 0f):0.0}s";
 
             return elapsed >= duration ? NodeState.Success : NodeState.Running;
         }

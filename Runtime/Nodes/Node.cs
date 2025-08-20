@@ -24,8 +24,44 @@ namespace Plugins.BehaviorTree.Runtime.Nodes
         protected NodeState state = NodeState.NotActive;
 
         // Display name for editor and debugging
-        public virtual string Name => string.IsNullOrWhiteSpace(title) ? GetType().Name : title;
-        public virtual string Description => string.IsNullOrWhiteSpace(description) ? "" : description;
+        public virtual string Name
+        {
+            get
+            {
+                return string.IsNullOrWhiteSpace(title) ? GetType().Name : title;
+            }
+
+            set
+            {
+                title = value;
+
+                #if UNITY_EDITOR
+                UpdateEditorGui();
+                #endif
+            }
+        }
+
+        public virtual string Description
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(description) && !string.IsNullOrWhiteSpace(title))
+                {
+                    return GetType().Name;
+                }
+
+                return description;
+            }
+    
+            set
+            {
+                description = value;
+
+                #if UNITY_EDITOR
+                UpdateEditorGui();
+                #endif
+            }
+        }
 
         public NodeState State => state;
 
