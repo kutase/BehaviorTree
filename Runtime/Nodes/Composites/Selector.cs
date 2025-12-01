@@ -28,5 +28,11 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Composites
 
             return NodeState.Failure;
         }
+
+        public override void Reset()
+        {
+            base.Reset();
+            currentIndex = 0;
+        }
     }
 }

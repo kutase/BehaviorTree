@@ -77,6 +77,12 @@ namespace Plugins.BehaviorTree.Runtime.Nodes
         public virtual void Reset()
         {
             state = NodeState.NotActive;
+
+            if (started)
+            {
+                OnExit();
+                started = false;
+            }
         }
 
         // Called once before execution when node starts running
@@ -104,7 +110,7 @@ namespace Plugins.BehaviorTree.Runtime.Nodes
 
             state = Run();
 
-            if (state != NodeState.Running)
+            if (started && state != NodeState.Running)
             {
                 OnExit();
                 started = false;

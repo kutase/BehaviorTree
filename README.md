@@ -148,6 +148,13 @@ This package provides a flexible implementation of Behavior Trees for Unity, all
 
 ---
 
+- **DoWhile**  
+  Executes the action node as long as the condition node returns `Success`.
+  - **Constructor**: Takes an action node and a condition node.
+  - **Behavior**: Ticks the condition node first. If `Success`, ticks the action node and returns `Running`. If `Failure`, returns `Success` (loop finished).
+
+---
+
 ### Implemented Tasks (Leaf Nodes)
 
 - **Delay**  
