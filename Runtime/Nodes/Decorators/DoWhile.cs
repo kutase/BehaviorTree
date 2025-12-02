@@ -8,6 +8,9 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
         private readonly Node actionNode;
         private readonly Node conditionNode;
 
+        public Node ActionNode => actionNode;
+        public Node ConditionNode => conditionNode;
+
         public DoWhile(Node actionNode, Node conditionNode)
         {
             this.actionNode = actionNode;

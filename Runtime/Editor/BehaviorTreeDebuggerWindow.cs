@@ -383,6 +383,12 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             {
                 return Mathf.Max(size.x, GetSubtreeWidth(decorator.Child));
             }
+            else if (node is DoWhile doWhile)
+            {
+                float actionWidth = GetSubtreeWidth(doWhile.ActionNode);
+                float conditionWidth = GetSubtreeWidth(doWhile.ConditionNode);
+                return Mathf.Max(size.x, actionWidth + conditionWidth + GetDynamicSpacing(doWhile.ActionNode));
+            }
             else
             {
                 return size.x;
@@ -437,6 +443,27 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 Layout(decorator.Child, origin + new Vector2(0, size.y + Mathf.Max(verticalSpacing, minVerticalSpacing)));
                 Vector2 childPos = positions[decorator.Child];
                 positions[node] = new Vector2(childPos.x, origin.y);
+            }
+            else if (node is DoWhile doWhile)
+            {
+                float actionWidth = GetSubtreeWidth(doWhile.ActionNode);
+                float conditionWidth = GetSubtreeWidth(doWhile.ConditionNode);
+                float totalWidth = actionWidth + conditionWidth + GetDynamicSpacing(doWhile.ActionNode);
+
+                float x = origin.x - totalWidth / 2f;
+
+                // Condition first (left)
+                float conditionX = x + conditionWidth / 2f;
+                Layout(doWhile.ConditionNode, new Vector2(conditionX, origin.y + size.y + Mathf.Max(verticalSpacing, minVerticalSpacing)));
+
+                x += conditionWidth + GetDynamicSpacing(doWhile.ActionNode);
+
+                // Action second (right)
+                float actionX = x + actionWidth / 2f;
+                Layout(doWhile.ActionNode, new Vector2(actionX, origin.y + size.y + Mathf.Max(verticalSpacing, minVerticalSpacing)));
+
+                float midX = (positions[doWhile.ConditionNode].x + positions[doWhile.ActionNode].x) / 2f;
+                positions[node] = new Vector2(midX, origin.y);
             }
             else
             {
@@ -522,6 +549,28 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                         float lineWidth = (isActive ? BehaviorTreeConfig.Instance.activeLineWidth : BehaviorTreeConfig.Instance.defaultLineWidth) * Mathf.Max(1f, zoom);
 
                         connectionsBuffer.Add((startNodeSize, childNodeSize, pair.Value, childPos, lineColor, lineWidth, isActive));
+                    }
+                }
+                else if (pair.Key is DoWhile doWhile)
+                {
+                    // Draw connection to Condition
+                    var conditionSize = GetNodeSize(doWhile.ConditionNode);
+                    if (positions.TryGetValue(doWhile.ConditionNode, out var conditionPos))
+                    {
+                        bool isActive = doWhile.ConditionNode.State != NodeState.NotActive;
+                        Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
+                        float lineWidth = (isActive ? BehaviorTreeConfig.Instance.activeLineWidth : BehaviorTreeConfig.Instance.defaultLineWidth) * Mathf.Max(1f, zoom);
+                        connectionsBuffer.Add((startNodeSize, conditionSize, pair.Value, conditionPos, lineColor, lineWidth, isActive));
+                    }
+
+                    // Draw connection to Action
+                    var actionSize = GetNodeSize(doWhile.ActionNode);
+                    if (positions.TryGetValue(doWhile.ActionNode, out var actionPos))
+                    {
+                        bool isActive = doWhile.ActionNode.State != NodeState.NotActive;
+                        Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
+                        float lineWidth = (isActive ? BehaviorTreeConfig.Instance.activeLineWidth : BehaviorTreeConfig.Instance.defaultLineWidth) * Mathf.Max(1f, zoom);
+                        connectionsBuffer.Add((startNodeSize, actionSize, pair.Value, actionPos, lineColor, lineWidth, isActive));
                     }
                 }
             }
