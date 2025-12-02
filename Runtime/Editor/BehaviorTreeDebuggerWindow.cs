@@ -507,6 +507,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         }
 
         private List<(Vector2 fromNodeSize, Vector2 toNodeSize, Vector2 from, Vector2 to, Color color, float width, bool highlighted)> connectionsBuffer = new();
+        private List<(Vector2 pos, string text)> labelsBuffer = new();
 
         /// <summary>
         /// Draws all connections between nodes; highlights lines that lead to active nodes.
@@ -515,6 +516,7 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private void DrawConnections()
         {
             connectionsBuffer.Clear();
+            labelsBuffer.Clear();
 
             foreach (var pair in positions)
             {
@@ -553,6 +555,8 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 }
                 else if (pair.Key is DoWhile doWhile)
                 {
+                    // var startNodeSize = GetNodeSize(pair.Key);
+
                     // Draw connection to Condition
                     var conditionSize = GetNodeSize(doWhile.ConditionNode);
                     if (positions.TryGetValue(doWhile.ConditionNode, out var conditionPos))
@@ -561,6 +565,12 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                         Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
                         float lineWidth = (isActive ? BehaviorTreeConfig.Instance.activeLineWidth : BehaviorTreeConfig.Instance.defaultLineWidth) * Mathf.Max(1f, zoom);
                         connectionsBuffer.Add((startNodeSize, conditionSize, pair.Value, conditionPos, lineColor, lineWidth, isActive));
+
+                        // Calculate label position
+                        Vector2 start = pair.Value * zoom + panOffset + new Vector2((startNodeSize.x * zoom) / 2f, startNodeSize.y * zoom);
+                        Vector2 end = conditionPos * zoom + panOffset + new Vector2((conditionSize.x * zoom) / 2f, 0);
+                        float midY = (start.y + end.y) * 0.5f;
+                        labelsBuffer.Add((new Vector2(end.x, midY - 10f * zoom), "Condition"));
                     }
 
                     // Draw connection to Action
@@ -571,6 +581,12 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                         Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
                         float lineWidth = (isActive ? BehaviorTreeConfig.Instance.activeLineWidth : BehaviorTreeConfig.Instance.defaultLineWidth) * Mathf.Max(1f, zoom);
                         connectionsBuffer.Add((startNodeSize, actionSize, pair.Value, actionPos, lineColor, lineWidth, isActive));
+
+                        // Calculate label position
+                        Vector2 start = pair.Value * zoom + panOffset + new Vector2((startNodeSize.x * zoom) / 2f, startNodeSize.y * zoom);
+                        Vector2 end = actionPos * zoom + panOffset + new Vector2((actionSize.x * zoom) / 2f, 0);
+                        float midY = (start.y + end.y) * 0.5f;
+                        labelsBuffer.Add((new Vector2(end.x, midY - 10f * zoom), "Action"));
                     }
                 }
             }
@@ -590,6 +606,26 @@ namespace Plugins.BehaviorTree.Runtime.Editor
 
                 DrawConnection(c.fromNodeSize, c.toNodeSize, c.from, c.to, c.color, c.width, c.highlighted);
             }
+
+            foreach (var label in labelsBuffer)
+            {
+                DrawLabel(label.pos, label.text);
+            }
+        }
+
+        private void DrawLabel(Vector2 position, string text)
+        {
+            var style = new GUIStyle(EditorStyles.label);
+            style.normal.textColor = Color.white;
+            style.alignment = TextAnchor.MiddleCenter;
+            style.fontSize = Mathf.RoundToInt(10 * zoom);
+            style.fontStyle = FontStyle.Bold;
+
+            var content = new GUIContent(text);
+            var size = style.CalcSize(content);
+            var rect = new Rect(position.x - size.x / 2f, position.y - size.y / 2f, size.x, size.y);
+
+            GUI.Label(rect, content, style);
         }
 
         /// <summary>

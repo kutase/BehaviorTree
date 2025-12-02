@@ -27,6 +27,7 @@ namespace Plugins.BehaviorTree.Runtime.Nodes.Decorators
             }
             else if (conditionState == NodeState.Failure)
             {
+                actionNode.Reset();
                 return NodeState.Success;
             }
             else
