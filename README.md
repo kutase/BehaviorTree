@@ -155,6 +155,13 @@ This package provides a flexible implementation of Behavior Trees for Unity, all
 
 ---
 
+- **AbortIf**  
+  Executes the action node, but checks the condition node every tick.
+  - **Constructor**: Takes an action node and a condition node.
+  - **Behavior**: Ticks the condition node first. If `Success`, aborts the action (resets it) and returns `Success`. Otherwise, ticks the action node and returns its state.
+
+---
+
 ### Implemented Tasks (Leaf Nodes)
 
 - **Delay**  

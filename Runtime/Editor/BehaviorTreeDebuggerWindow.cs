@@ -389,6 +389,12 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 float conditionWidth = GetSubtreeWidth(doWhile.ConditionNode);
                 return Mathf.Max(size.x, actionWidth + conditionWidth + GetDynamicSpacing(doWhile.ActionNode));
             }
+            else if (node is AbortIf abortIf)
+            {
+                float actionWidth = GetSubtreeWidth(abortIf.ActionNode);
+                float conditionWidth = GetSubtreeWidth(abortIf.ConditionNode);
+                return Mathf.Max(size.x, actionWidth + conditionWidth + GetDynamicSpacing(abortIf.ActionNode));
+            }
             else
             {
                 return size.x;
@@ -463,6 +469,27 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 Layout(doWhile.ActionNode, new Vector2(actionX, origin.y + size.y + Mathf.Max(verticalSpacing, minVerticalSpacing)));
 
                 float midX = (positions[doWhile.ConditionNode].x + positions[doWhile.ActionNode].x) / 2f;
+                positions[node] = new Vector2(midX, origin.y);
+            }
+            else if (node is AbortIf abortIf)
+            {
+                float actionWidth = GetSubtreeWidth(abortIf.ActionNode);
+                float conditionWidth = GetSubtreeWidth(abortIf.ConditionNode);
+                float totalWidth = actionWidth + conditionWidth + GetDynamicSpacing(abortIf.ActionNode);
+
+                float x = origin.x - totalWidth / 2f;
+
+                // Condition first (left)
+                float conditionX = x + conditionWidth / 2f;
+                Layout(abortIf.ConditionNode, new Vector2(conditionX, origin.y + size.y + Mathf.Max(verticalSpacing, minVerticalSpacing)));
+
+                x += conditionWidth + GetDynamicSpacing(abortIf.ActionNode);
+
+                // Action second (right)
+                float actionX = x + actionWidth / 2f;
+                Layout(abortIf.ActionNode, new Vector2(actionX, origin.y + size.y + Mathf.Max(verticalSpacing, minVerticalSpacing)));
+
+                float midX = (positions[abortIf.ConditionNode].x + positions[abortIf.ActionNode].x) / 2f;
                 positions[node] = new Vector2(midX, origin.y);
             }
             else
@@ -578,6 +605,40 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                     if (positions.TryGetValue(doWhile.ActionNode, out var actionPos))
                     {
                         bool isActive = doWhile.ActionNode.State != NodeState.NotActive;
+                        Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
+                        float lineWidth = (isActive ? BehaviorTreeConfig.Instance.activeLineWidth : BehaviorTreeConfig.Instance.defaultLineWidth) * Mathf.Max(1f, zoom);
+                        connectionsBuffer.Add((startNodeSize, actionSize, pair.Value, actionPos, lineColor, lineWidth, isActive));
+
+                        // Calculate label position
+                        Vector2 start = pair.Value * zoom + panOffset + new Vector2((startNodeSize.x * zoom) / 2f, startNodeSize.y * zoom);
+                        Vector2 end = actionPos * zoom + panOffset + new Vector2((actionSize.x * zoom) / 2f, 0);
+                        float midY = (start.y + end.y) * 0.5f;
+                        labelsBuffer.Add((new Vector2(end.x, midY - 10f * zoom), "Action"));
+                    }
+                }
+                else if (pair.Key is AbortIf abortIf)
+                {
+                    // Draw connection to Condition
+                    var conditionSize = GetNodeSize(abortIf.ConditionNode);
+                    if (positions.TryGetValue(abortIf.ConditionNode, out var conditionPos))
+                    {
+                        bool isActive = abortIf.ConditionNode.State != NodeState.NotActive;
+                        Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
+                        float lineWidth = (isActive ? BehaviorTreeConfig.Instance.activeLineWidth : BehaviorTreeConfig.Instance.defaultLineWidth) * Mathf.Max(1f, zoom);
+                        connectionsBuffer.Add((startNodeSize, conditionSize, pair.Value, conditionPos, lineColor, lineWidth, isActive));
+
+                        // Calculate label position
+                        Vector2 start = pair.Value * zoom + panOffset + new Vector2((startNodeSize.x * zoom) / 2f, startNodeSize.y * zoom);
+                        Vector2 end = conditionPos * zoom + panOffset + new Vector2((conditionSize.x * zoom) / 2f, 0);
+                        float midY = (start.y + end.y) * 0.5f;
+                        labelsBuffer.Add((new Vector2(end.x, midY - 10f * zoom), "Condition"));
+                    }
+
+                    // Draw connection to Action
+                    var actionSize = GetNodeSize(abortIf.ActionNode);
+                    if (positions.TryGetValue(abortIf.ActionNode, out var actionPos))
+                    {
+                        bool isActive = abortIf.ActionNode.State != NodeState.NotActive;
                         Color lineColor = isActive ? BehaviorTreeConfig.Instance.activeLineColor : BehaviorTreeConfig.Instance.defaultLineColor;
                         float lineWidth = (isActive ? BehaviorTreeConfig.Instance.activeLineWidth : BehaviorTreeConfig.Instance.defaultLineWidth) * Mathf.Max(1f, zoom);
                         connectionsBuffer.Add((startNodeSize, actionSize, pair.Value, actionPos, lineColor, lineWidth, isActive));
