@@ -25,6 +25,11 @@ namespace Plugins.BehaviorTree.Runtime
 
         public void StopTree()
         {
+            if (Tree != null)
+            {
+                Tree.Reset();
+            }
+
             Tree = null;
         }
 
