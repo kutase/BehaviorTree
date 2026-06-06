@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Plugins.BehaviorTree.Runtime.Configs;
@@ -42,6 +42,18 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private readonly float horizontalSpacing = 40;
         private readonly float minVerticalSpacing = 30; // minimum vertical spacing between nodes
 
+        // View settings
+        private readonly BehaviorTreeEditorViewSettings viewSettings = new();
+        private bool settingsPopupOpen;
+        private Rect settingsButtonRect;
+        private Rect settingsPopupRect;
+
+        private const float SettingsButtonSize = 24f;
+        private const float SettingsPopupWidth = 400f;
+        private const float SettingsPopupHeight = 210f;
+        private const float FitViewPadding = 40f;
+        private static readonly Color SettingsPopupBackdrop = new(0f, 0f, 0f, 0.35f);
+
         // Styles
         private GUIStyle treeNameStatusStyle;
         private Rect treeNameStatusRect;
@@ -53,8 +65,10 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private void OnEnable()
         {
             InitStyles();
+            viewSettings.Load();
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
             Selection.selectionChanged += OnSelectionChange;
+            OnSelectionChange();
         }
 
         private void OnDisable()
@@ -68,9 +82,15 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         [MenuItem("Window/Behavior Tree Viewer")]
         public static void OpenWindow()
         {
-            var window = CreateInstance<BehaviorTreeEditorWindow>();
+            OpenOrFocus();
+        }
+
+        public static void OpenOrFocus()
+        {
+            var window = GetWindow<BehaviorTreeEditorWindow>("Behavior Tree");
             window.titleContent = new GUIContent("Behavior Tree");
             window.Show();
+            window.Focus();
         }
         #endregion
 
@@ -82,9 +102,8 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 OnSelectionChange();
             }
 
-            // Input handling (pan + zoom + clicks)
-            HandlePanInput();
-            HandleZoomInput();
+            CacheTopBarRects();
+            HandleFocusInput();
 
             if (currentTree != null && currentTree.Root != null)
             {
@@ -96,14 +115,35 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 }
 
                 DrawCanvas();
-
-                // Show zoom percentage
-                DrawZoomLabel();
+                DrawTopBar();
+                HandleSettingsPopupDismiss();
             }
             else
             {
                 EditorGUILayout.HelpBox("Select a GameObject with a BehaviorTreeRunner.", MessageType.Info);
             }
+
+            if (!ShouldBlockCanvasInput())
+            {
+                HandlePanInput();
+                HandleZoomInput();
+            }
+        }
+
+        private void CacheTopBarRects()
+        {
+            settingsButtonRect = new Rect(position.width - 28f, 8f, SettingsButtonSize, SettingsButtonSize);
+
+            settingsPopupRect = new Rect(
+                settingsButtonRect.x - SettingsPopupWidth + settingsButtonRect.width,
+                settingsButtonRect.yMax + 2f,
+                SettingsPopupWidth,
+                SettingsPopupHeight);
+        }
+
+        private bool ShouldBlockCanvasInput()
+        {
+            return IsPointerOverSettingsUI(Event.current.mousePosition) ? true : GUIUtility.hotControl != 0;
         }
 
         void Update()
@@ -124,17 +164,10 @@ namespace Plugins.BehaviorTree.Runtime.Editor
 
         private void OnSelectionChange()
         {
-            if (Selection.activeGameObject != null)
+            if (BehaviorTreeEditorSelection.TryGetRunnerFromSelection(out BehaviorTreeRunner runner))
             {
-                currentTreeRunner = Selection.activeGameObject.GetComponentInChildren<BehaviorTreeRunner>();
-                if (currentTreeRunner != null)
-                {
-                    currentTree = currentTreeRunner.Tree;
-                }
-                else
-                {
-                    currentTree = null;
-                }
+                currentTreeRunner = runner;
+                currentTree = runner.Tree;
             }
             else
             {
@@ -154,7 +187,11 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private void ResetZoom()
         {
             zoom = BehaviorTreeConfig.Instance.defaultZoom;
+            ApplyZoomToStyles();
+        }
 
+        private void ApplyZoomToStyles()
+        {
             HeaderStyle.fontSize = Mathf.RoundToInt(zoom * BehaviorTreeConfig.Instance.headerFontSize);
             BodyStyle.fontSize = Mathf.RoundToInt(zoom * BehaviorTreeConfig.Instance.bodyFontSize);
         }
@@ -165,10 +202,14 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private void InitStyles()
         {
             if (HeaderStyle == null)
+            {
                 HeaderStyle = CreateHeaderStyle();
+            }
 
             if (BodyStyle == null)
+            {
                 BodyStyle = CreateBodyStyle();
+            }
 
             treeNameStatusStyle = new GUIStyle { fontSize = 36, fontStyle = FontStyle.Bold };
             treeNameStatusStyle.normal.textColor = BehaviorTreeConfig.Instance.treeNameColor;
@@ -211,46 +252,79 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private void HandlePanInput()
         {
             Event e = Event.current;
-            if (e.type == EventType.MouseDown && e.button == 0)
+            int panButton = (int)viewSettings.PanButton;
+
+            if (e.button == 0)
             {
-                // Begin possible click/drag
-                dragging = false; // don't assume pan until we see drag
+                if (e.type == EventType.MouseDown)
+                {
+                    dragging = false;
+                    dragStartPos = e.mousePosition;
+                    clickStartPos = e.mousePosition;
+                    clickCandidate = true;
+                    e.Use();
+                }
+                else if (e.type == EventType.MouseDrag && panButton == 0)
+                {
+                    Vector2 delta = e.mousePosition - dragStartPos;
+
+                    if (!dragging && delta.magnitude > clickThreshold)
+                    {
+                        dragging = true;
+                        clickCandidate = false;
+                    }
+
+                    if (dragging)
+                    {
+                        panOffset += delta * viewSettings.PanSpeed;
+                        dragStartPos = e.mousePosition;
+                        Repaint();
+                    }
+
+                    e.Use();
+                }
+                else if (e.type == EventType.MouseUp)
+                {
+                    if (clickCandidate && Vector2.Distance(clickStartPos, e.mousePosition) <= clickThreshold)
+                    {
+                        OnNodeClicked(e.mousePosition);
+                    }
+
+                    if (panButton == 0)
+                    {
+                        dragging = false;
+                    }
+
+                    clickCandidate = false;
+                    e.Use();
+                }
+
+                return;
+            }
+
+            if (e.button != panButton)
+            {
+                return;
+            }
+
+            if (e.type == EventType.MouseDown)
+            {
+                dragging = true;
                 dragStartPos = e.mousePosition;
-                clickStartPos = e.mousePosition;
-                clickCandidate = true;
+                clickCandidate = false;
                 e.Use();
             }
-            else if (e.type == EventType.MouseDrag && e.button == 0)
+            else if (e.type == EventType.MouseDrag)
             {
                 Vector2 delta = e.mousePosition - dragStartPos;
-
-                // If movement exceeds threshold, consider this a drag (pan)
-                if (!dragging && delta.magnitude > clickThreshold)
-                {
-                    dragging = true;
-                    clickCandidate = false;
-                }
-
-                if (dragging)
-                {
-                    panOffset += delta;
-                    dragStartPos = e.mousePosition;
-                    Repaint();
-                }
-
+                panOffset += delta * viewSettings.PanSpeed;
+                dragStartPos = e.mousePosition;
+                Repaint();
                 e.Use();
             }
-            else if (e.type == EventType.MouseUp && e.button == 0)
+            else if (e.type == EventType.MouseUp)
             {
-                // If it was a click (no significant drag), handle node click
-                if (clickCandidate && Vector2.Distance(clickStartPos, e.mousePosition) <= clickThreshold)
-                {
-                    OnNodeClicked(e.mousePosition);
-                }
-
-                // Reset flags
                 dragging = false;
-                clickCandidate = false;
                 e.Use();
             }
         }
@@ -261,17 +335,22 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private void HandleZoomInput()
         {
             Event e = Event.current;
-            if (e.type == EventType.ScrollWheel)
+            if (e.type != EventType.ScrollWheel)
             {
-                var zoomDirection = e.delta.y;
-
-                float scale = (zoomDirection < 0f) ? (1f - BehaviorTreeConfig.Instance.zoomSensitivity) : (1f + BehaviorTreeConfig.Instance.zoomSensitivity);
-                var nextZoom = zoom * scale;
-
-                ZoomAt(e.mousePosition, nextZoom);
-
-                e.Use();
+                return;
             }
+
+            var zoomDirection = e.delta.y;
+            if (viewSettings.InvertZoom)
+            {
+                zoomDirection = -zoomDirection;
+            }
+
+            float sensitivity = BehaviorTreeConfig.Instance.zoomSensitivity * viewSettings.ZoomSpeed;
+            float scale = zoomDirection < 0f ? 1f - sensitivity : 1f + sensitivity;
+            ZoomAt(e.mousePosition, zoom * scale);
+
+            e.Use();
         }
 
         /// <summary>
@@ -284,7 +363,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             float oldZoom = zoom;
             float newZoom = Mathf.Clamp(scale, BehaviorTreeConfig.Instance.minZoom, BehaviorTreeConfig.Instance.maxZoom);
             if (Mathf.Approximately(newZoom, oldZoom))
+            {
                 return;
+            }
 
             float finalScale = newZoom / oldZoom;
 
@@ -293,7 +374,36 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             panOffset = (panOffset - screenPoint) * finalScale + screenPoint;
 
             zoom = newZoom;
+            ApplyZoomToStyles();
             Repaint();
+        }
+
+        /// <summary>
+        /// Handles keyboard shortcuts for framing nodes in view.
+        /// </summary>
+        private void HandleFocusInput()
+        {
+            Event e = Event.current;
+            if (e.type != EventType.KeyDown || e.keyCode != KeyCode.F)
+            {
+                return;
+            }
+
+            if (GUIUtility.keyboardControl != 0 || currentTree == null || positions.Count == 0)
+            {
+                return;
+            }
+
+            if (e.shift)
+            {
+                FitAllNodesInView();
+            }
+            else
+            {
+                FocusDeepestRunningNode();
+            }
+
+            e.Use();
         }
         #endregion
 
@@ -305,7 +415,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private void OnNodeClicked(Vector2 mousePosition)
         {
             if (positions == null || positions.Count == 0)
+            {
                 return;
+            }
 
             // iterate in reverse to prioritize nodes drawn later (in case of overlap) — although order is arbitrary here
             foreach (var pair in positions.Reverse())
@@ -330,7 +442,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private void OpenNodeScriptForNode(Node node)
         {
             if (node == null)
+            {
                 return;
+            }
 
             Type nodeType = node.GetType();
 
@@ -341,7 +455,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 var mono = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
                 if (mono == null)
+                {
                     continue;
+                }
 
                 var scriptClass = mono.GetClass();
                 if (scriptClass == nodeType)
@@ -375,7 +491,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                     totalWidth += childWidth;
 
                     if (i < composite.Children.Count - 1)
+                    {
                         totalWidth += GetDynamicSpacing(child); // dynamic spacing between child nodes
+                    }
                 }
                 return Mathf.Max(size.x, totalWidth);
             }
@@ -437,7 +555,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
 
                     x += childWidth;
                     if (i < composite.Children.Count - 1)
+                    {
                         x += GetDynamicSpacing(child);
+                    }
                 }
 
                 float midX = (childPositions.First().x + childPositions.Last().x) / 2f;
@@ -499,23 +619,179 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         }
 
         /// <summary>
-        /// Centers the tree on the screen.
+        /// Centers the tree on the screen at the current zoom level.
         /// </summary>
         private void CenterTree()
         {
-            if (positions.Count == 0)
+            if (!TryGetNodesBounds(positions.Keys, out Rect bounds))
+            {
                 return;
+            }
 
-            float minX = positions.Values.Min(pos => pos.x);
-            float maxX = positions.Values.Max(pos => pos.x);
-            float minY = positions.Values.Min(pos => pos.y);
-            float maxY = positions.Values.Max(pos => pos.y);
-
-            Vector2 center = new Vector2((minX + maxX) / 2f, (minY + maxY) / 2f);
             Vector2 canvasCenter = position.size / 2f;
+            panOffset = canvasCenter - bounds.center * zoom;
+        }
 
-            // When zoomed, scale the logical center before centering.
-            panOffset = canvasCenter - center * zoom;
+        private bool TryGetNodesBounds(IEnumerable<Node> nodes, out Rect bounds)
+        {
+            bounds = default;
+            bool any = false;
+            float minX = float.MaxValue;
+            float minY = float.MaxValue;
+            float maxX = float.MinValue;
+            float maxY = float.MinValue;
+
+            foreach (Node node in nodes)
+            {
+                if (!positions.TryGetValue(node, out Vector2 pos))
+                {
+                    continue;
+                }
+
+                Vector2 size = GetNodeSize(node);
+                minX = Mathf.Min(minX, pos.x);
+                minY = Mathf.Min(minY, pos.y);
+                maxX = Mathf.Max(maxX, pos.x + size.x);
+                maxY = Mathf.Max(maxY, pos.y + size.y);
+                any = true;
+            }
+
+            if (!any)
+            {
+                return false;
+            }
+
+            bounds = Rect.MinMaxRect(minX, minY, maxX, maxY);
+            return true;
+        }
+
+        private void FitBoundsInView(Rect logicalBounds)
+        {
+            if (logicalBounds.width <= 0f || logicalBounds.height <= 0f)
+            {
+                return;
+            }
+
+            Vector2 viewSize = position.size;
+            float zoomX = (viewSize.x - FitViewPadding * 2f) / logicalBounds.width;
+            float zoomY = (viewSize.y - FitViewPadding * 2f) / logicalBounds.height;
+            zoom = Mathf.Clamp(
+                Mathf.Min(zoomX, zoomY),
+                BehaviorTreeConfig.Instance.minZoom,
+                BehaviorTreeConfig.Instance.maxZoom);
+
+            Vector2 canvasCenter = viewSize / 2f;
+            panOffset = canvasCenter - logicalBounds.center * zoom;
+            ApplyZoomToStyles();
+            Repaint();
+        }
+
+        private void FocusDeepestRunningNode()
+        {
+            Node target = GetDeepestLeafRunningNode();
+            if (target == null)
+            {
+                return;
+            }
+
+            FocusOnNode(target);
+        }
+
+        private Node GetDeepestLeafRunningNode()
+        {
+            Node best = null;
+            float bestY = float.MinValue;
+
+            foreach (Node node in positions.Keys)
+            {
+                if (node.State != NodeState.Running || HasRunningChild(node))
+                {
+                    continue;
+                }
+
+                if (!positions.TryGetValue(node, out Vector2 pos))
+                {
+                    continue;
+                }
+
+                if (pos.y <= bestY)
+                {
+                    continue;
+                }
+
+                bestY = pos.y;
+                best = node;
+            }
+
+            return best;
+        }
+
+        private bool HasRunningChild(Node node)
+        {
+            foreach (Node child in GetChildNodes(node))
+            {
+                if (child.State == NodeState.Running)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private IEnumerable<Node> GetChildNodes(Node node)
+        {
+            if (node is Composite composite)
+            {
+                foreach (Node child in composite.Children)
+                {
+                    yield return child;
+                }
+            }
+            else if (node is Decorator decorator && decorator.Child != null)
+            {
+                yield return decorator.Child;
+            }
+            else if (node is DoWhile doWhile)
+            {
+                yield return doWhile.ConditionNode;
+                yield return doWhile.ActionNode;
+            }
+            else if (node is AbortIf abortIf)
+            {
+                yield return abortIf.ConditionNode;
+                yield return abortIf.ActionNode;
+            }
+        }
+
+        private void FocusOnNode(Node node)
+        {
+            if (!positions.TryGetValue(node, out Vector2 pos))
+            {
+                return;
+            }
+
+            Vector2 size = GetNodeSize(node);
+            Vector2 nodeCenter = pos + size * 0.5f;
+            float targetZoom = Mathf.Clamp(
+                BehaviorTreeConfig.Instance.defaultZoom * 2f,
+                BehaviorTreeConfig.Instance.minZoom,
+                BehaviorTreeConfig.Instance.maxZoom);
+
+            zoom = targetZoom;
+            panOffset = position.size * 0.5f - nodeCenter * zoom;
+            ApplyZoomToStyles();
+            Repaint();
+        }
+
+        private void FitAllNodesInView()
+        {
+            if (!TryGetNodesBounds(positions.Keys, out Rect bounds))
+            {
+                return;
+            }
+
+            FitBoundsInView(bounds);
         }
         #endregion
 
@@ -655,7 +931,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             foreach (var c in connectionsBuffer)
             {
                 if (c.highlighted)
+                {
                     continue;
+                }
 
                 DrawConnection(c.fromNodeSize, c.toNodeSize, c.from, c.to, c.color, c.width, c.highlighted);
             }
@@ -663,7 +941,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
             foreach (var c in connectionsBuffer)
             {
                 if (!c.highlighted)
+                {
                     continue;
+                }
 
                 DrawConnection(c.fromNodeSize, c.toNodeSize, c.from, c.to, c.color, c.width, c.highlighted);
             }
@@ -786,7 +1066,9 @@ namespace Plugins.BehaviorTree.Runtime.Editor
         private Vector2 GetNodeSize(Node node)
         {
             if (nodeSizes.ContainsKey(node))
+            {
                 return nodeSizes[node];
+            }
 
             node.UpdateEditorGui();
             Vector2 headerSize = HeaderStyle.CalcSize(node.HeaderContent);
@@ -914,11 +1196,107 @@ namespace Plugins.BehaviorTree.Runtime.Editor
                 _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
             };
         }
+        #endregion
 
-        private void DrawZoomLabel()
+        #region Settings UI
+        private void DrawTopBar()
         {
-            var rect = new Rect(position.width - 120f, 10f, 110f, 20f);
-            GUI.Label(rect, $"Zoom: {Mathf.RoundToInt(zoom * 100f)}%", EditorStyles.whiteLabel);
+            var zoomRect = new Rect(position.width - 180f, 10f, 110f, 20f);
+
+            GUI.Label(zoomRect, $"Zoom: {Mathf.RoundToInt(zoom * 100f)}%", EditorStyles.whiteLabel);
+
+            if (GUI.Button(settingsButtonRect, EditorGUIUtility.IconContent("_Popup"), EditorStyles.toolbarButton))
+            {
+                settingsPopupOpen = !settingsPopupOpen;
+                GUI.FocusControl(null);
+                Repaint();
+            }
+
+            if (settingsPopupOpen)
+            {
+                DrawSettingsPopup();
+            }
+        }
+
+        private void DrawSettingsPopup()
+        {
+            EditorGUI.DrawRect(settingsPopupRect, SettingsPopupBackdrop);
+
+            var contentRect = new Rect(
+                settingsPopupRect.x + 6f,
+                settingsPopupRect.y + 6f,
+                settingsPopupRect.width - 12f,
+                settingsPopupRect.height - 12f);
+
+            var previousDepth = GUI.depth;
+            GUI.depth = -1000;
+
+            GUILayout.BeginArea(contentRect, EditorStyles.helpBox);
+            {
+                EditorGUILayout.LabelField("Navigation", EditorStyles.boldLabel);
+
+                viewSettings.PanButton = (PanMouseButton)EditorGUILayout.EnumPopup("Pan button", viewSettings.PanButton);
+                viewSettings.InvertZoom = EditorGUILayout.Toggle("Invert zoom", viewSettings.InvertZoom);
+                viewSettings.PanSpeed = EditorGUILayout.Slider(
+                    "Pan speed",
+                    viewSettings.PanSpeed,
+                    BehaviorTreeEditorViewSettings.MinSpeed,
+                    BehaviorTreeEditorViewSettings.MaxSpeed);
+                viewSettings.ZoomSpeed = EditorGUILayout.Slider(
+                    "Zoom speed",
+                    viewSettings.ZoomSpeed,
+                    BehaviorTreeEditorViewSettings.MinSpeed,
+                    BehaviorTreeEditorViewSettings.MaxSpeed);
+
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.BeginHorizontal();
+                {
+                    if (GUILayout.Button("Save"))
+                    {
+                        viewSettings.Save();
+                        ShowNotification(new GUIContent("Navigation settings saved"));
+                    }
+
+                    if (GUILayout.Button("Reset"))
+                    {
+                        viewSettings.ResetToDefaults();
+                        ShowNotification(new GUIContent("Navigation settings reset"));
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.LabelField("F — deep Running  |  Shift+F — frame all", EditorStyles.miniLabel);
+            }
+            GUILayout.EndArea();
+
+            GUI.depth = previousDepth;
+        }
+
+        private void HandleSettingsPopupDismiss()
+        {
+            if (!settingsPopupOpen)
+            {
+                return;
+            }
+
+            Event e = Event.current;
+            if (e.type != EventType.MouseDown)
+            {
+                return;
+            }
+
+            if (settingsPopupRect.Contains(e.mousePosition) || settingsButtonRect.Contains(e.mousePosition))
+            {
+                return;
+            }
+
+            settingsPopupOpen = false;
+            e.Use();
+        }
+
+        private bool IsPointerOverSettingsUI(Vector2 mousePosition)
+        {
+            return settingsButtonRect.Contains(mousePosition) ? true : settingsPopupOpen && settingsPopupRect.Contains(mousePosition);
         }
         #endregion
     }
