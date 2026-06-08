@@ -23,6 +23,15 @@ This package provides a flexible implementation of Behavior Trees for Unity, all
 - **Decorator Nodes**: Nodes that modify the behavior of a single child (e.g., `Repeat`, `Inverter`, `IfElse`).  
 - **Task Nodes**: Leaf nodes that perform actions or checks (e.g., `Delay`, `ForceFailure`, custom task nodes).
 
+## Behavior Tree Viewer (Editor)
+
+Runtime debug window for inspecting behavior trees on objects with `BehaviorTreeRunner`.
+
+- **Behavior Tree Viewer**: Open via **Window → Behavior Tree Viewer**. Select a GameObject with `BehaviorTreeRunner` (on itself, a child, or a parent) to display its tree and node states in Play Mode.
+- **Scene View button**: A toolbar button appears in the Scene View when the current selection has a `BehaviorTreeRunner` nearby. Click it to open or focus the viewer for the selected NPC.
+- **Navigation settings**: Use the settings button (top-right) to configure pan mouse button, zoom inversion, and pan/zoom speed. Save preferences to **EditorPrefs** or reset to defaults.
+- **Focus shortcuts**: Press **F** to center on the deepest leaf `Running` node; **Shift+F** to frame the entire tree in the viewport.
+
 ## Node Reference
 
 ### Abstract Base Classes
